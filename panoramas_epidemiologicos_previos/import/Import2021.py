@@ -64,4 +64,4 @@ for name in fnames:
             df_all = df
 
 # Save as csv
-df_all.to_csv(os.path.join("processed", "2021.csv"), index=False)
+df_all.to_csv(os.path.join("panoramas_epidemiologicos_previos/processed", "2021.csv"), index=False)

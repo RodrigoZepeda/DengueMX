@@ -53,4 +53,4 @@ for name in fnames:
 
 
 #Save as csv
-df_all.to_csv(os.path.join("processed", "2017.csv"),  index=False)
+df_all.to_csv(os.path.join("panoramas_epidemiologicos_previos/processed", "2017.csv"),  index=False)
