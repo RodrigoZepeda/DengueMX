@@ -2,6 +2,7 @@ import requests
 import os
 from datetime import date
 from daterange import *
+import filecmp
 
 download_folder = 'datos-abiertos'
 
@@ -19,8 +20,9 @@ end_date   = date.today()
 
 
 base_url   = 'https://datosabiertos.salud.gob.mx/gobmx/salud/datos_abiertos/etv/historicos'
+latest_url = 'https://datosabiertos.salud.gob.mx/gobmx/salud/datos_abiertos/etv/datos_abiertos_dengue.zip'
 
-#Descarga por fecha
+#Descarga por fecha de los históricos
 for fecha in daterange(start_date, end_date):
 
     #Formateo de los datos
@@ -56,5 +58,34 @@ for fecha in daterange(start_date, end_date):
     else:
         print("El archivo de " + fecha.strftime("%d/%m/%Y") + " ya está descargado")
 
+#Descarga el más reciente
+#Check latest file
+files = sorted(os.listdir(download_folder), key=lambda fn: - os.path.getctime(os.path.join(download_folder, fn)))
 
-print('¡Terminé!')
+try:
+    print("Buscando los más recientes...")
+    req = requests.get(latest_url)
+
+    if req.status_code == 404:
+        print("Datos más recientes no encontrados")
+
+    else:
+        # Split URL to get the file name
+        filename = os.path.join(download_folder, latest_url.split('/')[-1])
+
+        # Writing the file to the local file system
+        with open(filename, 'wb') as output_file:
+            output_file.write(req.content)
+        print('Descarga completada de latest')
+
+except:
+    print('No encontrado el archivo para ' + fecha.strftime("%d/%m/%Y"))
+
+#Compare both files
+are_files_equal = filecmp.cmp(filename, os.path.join(download_folder, files[0]))
+if are_files_equal:
+    os.remove(filename)
+    print("No hay datos más recientes")
+else:
+    os.rename(filename, os.path.join(download_folder, "datos_abiertos_covid19_" + date.today().strftime("%d.%m.%Y") + ".zip"))
+    print("Datos más recientes descargados")
