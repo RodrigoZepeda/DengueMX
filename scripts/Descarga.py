@@ -41,7 +41,7 @@ for fecha in daterange(start_date, end_date):
             req = requests.get(url)
 
             if req.status_code == 404:
-                #print("Datos no encontrados para " + fecha.strftime("%d/%m/%Y"))
+                print("")
 
             else:
                 # Split URL to get the file name
@@ -53,7 +53,7 @@ for fecha in daterange(start_date, end_date):
                 print('Descarga completada de ' + fecha.strftime("%d/%m/%Y"))
 
         except:
-            #print('No encontrado el archivo para ' + fecha.strftime("%d/%m/%Y"))
+            print('No encontrado el archivo para ' + fecha.strftime("%d/%m/%Y"))
 
     else:
         print("El archivo de " + fecha.strftime("%d/%m/%Y") + " ya está descargado")
