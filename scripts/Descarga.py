@@ -3,7 +3,7 @@ import os
 from datetime import date
 from daterange import *
 
-download_folder = '/Users/rod/DengueMX/datos-abiertos'
+download_folder = 'datos-abiertos'
 
 if not os.path.exists(download_folder):
     os.makedirs(download_folder)
