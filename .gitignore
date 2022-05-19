@@ -9,7 +9,9 @@ __pycache__/
 # History files
 .Rhistory
 .Rapp.history
-Rplots
+
+Rplots.pdf
+Rplot.pdf
 
 # Session Data files
 .RData
