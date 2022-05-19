@@ -9,7 +9,7 @@ if not os.path.exists(download_folder):
     os.makedirs(download_folder)
 
 #Fecha inicial de datos
-start_date = date(2020, 12, 04) #December 2020. The one from 03/12/2020 has an error thus ignored
+start_date = date(2020, 12, 4) #December 2020. The one from 03/12/2020 has an error thus ignored
 end_date   = date.today()
 
 #Ejemplos de fechas
