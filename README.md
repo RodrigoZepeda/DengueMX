@@ -1,6 +1,6 @@
 # DengueMX
 
-![Casos de dengue en México](images/Dengue.png)
+![Casos de dengue en México](images/Dengue_predict.png)
 
 Repositorio de los datos abiertos y scrappeados de dengue en México.
 
@@ -13,4 +13,4 @@ Repositorio de los datos abiertos y scrappeados de dengue en México.
 
 ## Colabora
 
-La meta es tener un modelo trabajado de dengue aunque sea a nivel nacional para el próximo año. Si te interesa escríbeme. 
+La meta es tener un (mejor) modelo de dengue aunque sea a nivel nacional para el próximo año. Éste es sólo una prueba de concepto. Si te interesa escríbeme o manda un pull request. Lo mismo si puedes bajar los datos de años previos. 
