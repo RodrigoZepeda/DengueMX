@@ -87,5 +87,5 @@ if are_files_equal:
     os.remove(filename)
     print("No hay datos más recientes")
 else:
-    os.rename(filename, os.path.join(download_folder, "datos_abiertos_covid19_" + date.today().strftime("%d%m%y") + ".zip"))
+    os.rename(filename, os.path.join(download_folder, "datos_abiertos_dengue_" + date.today().strftime("%d%m%y") + ".zip"))
     print("Datos más recientes descargados")
