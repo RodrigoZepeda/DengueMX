@@ -11,6 +11,12 @@ Repositorio de los datos abiertos y scrappeados de dengue en México.
     + `processed` contiene los datos scrappeados de los panoramas epidemiológicos previos
 + `scripts` para la descarga y el formateo de datos
 
+![Casos de dengue en México](images/Dengue_predict.png)
+
 ## Colabora
 
-La meta es tener un (mejor) modelo de dengue aunque sea a nivel nacional para el próximo año. Éste es sólo una prueba de concepto. Si te interesa escríbeme o manda un pull request. Lo mismo si puedes bajar los datos de años previos. 
+La meta es tener un (mejor) modelo de dengue aunque sea a nivel nacional para el próximo año. Éste es sólo una prueba de concepto. Si te interesa escríbeme o manda un pull request. Algunas cosas en las que podrías colaborar:
+
++ Descargar datos de años previos. 
++ Conseguir covariables para mejorar la predicción (ejemplo variables de clima).
++ Mejorar el modelo (por ahora es sólo uno de juguete por falta de tiempo). 
