@@ -32,14 +32,14 @@ tibble(
 ) %>%
 ggplot(aes(x = fecha, y = pred)) + 
   geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.25,
-              fill = "#143D59") +
+              fill = "#12757E") +
   geom_line(aes(color = color, linetype = color, size = color)) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   theme_minimal() +
   labs(
     x = "",
     y = "Casos probables",
-    title = glue::glue("Incidencia de <span style = 'color:#F4B41A;'>casos probables de dengue</span> ", 
+    title = glue::glue("<span style = 'color:#92AF75;'>Casos probables de dengue</span> ", 
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
     subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
@@ -48,8 +48,10 @@ ggplot(aes(x = fecha, y = pred)) +
   scale_y_continuous(labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),
         plot.title = element_markdown(),
+        panel.background = element_rect(fill = "#FBFFFB"),
+        plot.background  = element_rect(fill = "#FBFFFB"),
         plot.subtitle = element_text(size = 8, face = "italic", color = "gray25")) +
-  scale_color_manual("Incidencia", values = c("Observado" = "#F4B41A", "Predicho" = "#143D59")) +
+  scale_color_manual("Incidencia", values = c("Observado" = "#92AF75", "Predicho" = "#12757E")) +
   scale_linetype_manual("Incidencia", values = c("Observado" = "solid", "Predicho" = "dashed")) +
   scale_size_manual("Incidencia", values = c("Observado" = 1, "Predicho" = 0.5))
 ggsave("images/Dengue_predict.pdf", width = 8, height = 4)

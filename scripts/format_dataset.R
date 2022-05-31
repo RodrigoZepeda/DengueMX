@@ -24,7 +24,7 @@ dengue <- read_csv(dengue_data) %>%
     str_detect(FECHA_SIGN_SINTOMAS,"-") ~ as.Date(FECHA_SIGN_SINTOMAS, "%Y-%m-%d"),
     TRUE ~ NA_Date_
   )) %>%
-  select(-A, -FECHA_ACTUALIZACION, -FECHA_SIGN_SINTOMAS)
+  dplyr::select(-A, -FECHA_ACTUALIZACION, -FECHA_SIGN_SINTOMAS)
 
 #DICCIONARIO -----
 
@@ -34,7 +34,7 @@ caso   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
 dengue <- dengue %>% 
   left_join(caso %>% rename(ESTATUS_CASO = CLAVE), by = "ESTATUS_CASO") %>%
   rename(`Estatus Caso` = `DESCRIPCIÓN`) %>%
-  select(-ESTATUS_CASO) 
+  dplyr::select(-ESTATUS_CASO) 
 
 # | > PCR ----
 pcr   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
@@ -205,11 +205,11 @@ dengue_all %>%
   summarise(n = sum(n)) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
   ggplot() +
-  geom_line(aes(x = fecha, y = n), size = 1, color = "#C84B31") +
+  geom_line(aes(x = fecha, y = n), size = 1, color = "#12757E") +
   labs(
     x = "",
     y = "Casos probables",
-    title = glue::glue("Incidencia de <span style = 'color:#C84B31;'>casos probables de dengue</span> ", 
+    title = glue::glue("Incidencia de <span style = 'color:#12757E;'>casos probables de dengue</span> ", 
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
     subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
@@ -221,6 +221,8 @@ dengue_all %>%
                date_labels = "%b-%y", expand = c(0, 0)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),
         plot.title = element_markdown(),
+        panel.background = element_rect(fill = "#FBFFFB"),
+        plot.background  = element_rect(fill = "#FBFFFB"),
         plot.subtitle = element_text(size = 8, face = "italic", color = "gray25")) +
   coord_cartesian(xlim = c(ymd("2015/03/01"), today())) 
 ggsave("images/Dengue.pdf", width = 8, height = 4)
@@ -260,8 +262,8 @@ dengue_all %>%
                                             face = "italic"),
         panel.spacing    = unit(1, "lines"),
         panel.grid       = element_blank(),
-        panel.background = element_rect(fill = "#FFF9EF"),
-        plot.background  = element_rect(fill = "#FFF9EF"),
+        panel.background = element_rect(fill = "#FBFFFB"),
+        plot.background  = element_rect(fill = "#FBFFFB"),
         axis.title.y     = element_markdown(color = "black"),
         axis.text        = element_text(color = "black"),
         legend.position  = "none",
