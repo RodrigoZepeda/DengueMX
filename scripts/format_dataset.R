@@ -205,11 +205,11 @@ dengue_all %>%
   summarise(n = sum(n)) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
   ggplot() +
-  geom_line(aes(x = fecha, y = n), size = 1, color = "firebrick") +
+  geom_line(aes(x = fecha, y = n), size = 1, color = "#C84B31") +
   labs(
     x = "",
     y = "Casos probables",
-    title = glue::glue("Incidencia de <span style = 'color:firebrick;'>casos probables de dengue</span> ", 
+    title = glue::glue("Incidencia de <span style = 'color:#C84B31;'>casos probables de dengue</span> ", 
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
     subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
@@ -227,33 +227,47 @@ ggsave("images/Dengue.pdf", width = 8, height = 4)
 ggsave("images/Dengue.png", width = 8, height = 4, dpi = 750, bg = "white")
 
 #Create plot by state
+set.seed(236857)
+colors <- colorRampPalette(c("#92AF75","#12757E"))(32)
 dengue_all %>%
   ungroup() %>%
   arrange(fecha, Estado) %>%
   group_by(Estado) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
   ggplot() +
-  geom_point(aes(x = fecha, y = n), size = 0.1, color = "gray75",
-             data = dengue_all) +
-  geom_line(aes(x = fecha, y = n), size = 0.75, color = "firebrick") +
-  facet_wrap(~Estado, scales = "free_y",nrow = 4) +
+  #geom_point(aes(x = fecha, y = n), size = 0.1, color = "gray75",
+  #           data = dengue_all) +
+  #geom_line(aes(x = fecha, y = n), size = 0.75, color = "firebrick") +
+  #geom_area(aes(x = fecha, y = n), size = 0.75, fill = "firebrick") +
+  geom_area(aes(x = fecha, y = n, fill = Estado), color = "#FFF9EF") +
+  facet_wrap(~Estado, scales = "free_y",nrow = 8) +
   labs(
     x = "",
-    y = "Casos probables",
-    title = glue::glue("Incidencia **estatal** de <span style = 'color:firebrick;'>casos probables de dengue</span> ", 
-                       "por fecha de inicio de síntomas"),
-    caption = glue::glue("Elaborada el {today()}"),
-    subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
-                          "Panoramas Epidemiológicos de Dengue 2017-2019")
+    y = "",
+    title = glue::glue("<br><span style = 'color:#12757E;'>Dengue</span> ", 
+                       ""),
+    caption = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud (2020-{year(today())}) y ", 
+                         "Panoramas Epidemiológicos de Dengue 2017-2019. Elaborada el {today()}"),
+    subtitle = glue::glue("<span style = 'color:#92AF75;'>Casos probables por fecha de inicio de síntomas</span>")
   ) +
   theme_minimal() +
   scale_y_continuous(labels = scales::comma) +
   scale_x_date(date_minor_breaks = "6 months", date_breaks = "1 year",
-               date_labels = "%b-%y", expand = c(0, 0)) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1),
-        plot.title = element_markdown(),
-        plot.subtitle = element_text(size = 8, face = "italic", color = "gray25")) +
-  coord_cartesian(xlim = c(ymd("2015/03/01"), today())) 
-ggsave("images/Dengue_estado.pdf", width = 20, height = 6)
-ggsave("images/Dengue_estado.png", width = 20, height = 6, dpi = 750, bg = "white")
+               date_labels = "%Y", expand = c(0, 0)) +
+  theme(axis.text.x      = element_text(angle = 90, hjust = 1),
+        plot.title       = element_markdown(size = 50, family = "Helvetica"),
+        plot.subtitle    = element_markdown(size = 20, color = "gray25", family = "Helvetica",
+                                            face = "italic"),
+        panel.spacing    = unit(1, "lines"),
+        panel.grid       = element_blank(),
+        panel.background = element_rect(fill = "#FFF9EF"),
+        plot.background  = element_rect(fill = "#FFF9EF"),
+        axis.title.y     = element_markdown(color = "black"),
+        axis.text        = element_text(color = "black"),
+        legend.position  = "none",
+        panel.border     = element_rect(color = "black", fill = NA, size = 1)) +
+  coord_cartesian(xlim = c(ymd("2015/03/01"), today())) +
+  scale_fill_manual(values = sample(colors))
+ggsave("images/Dengue_estado.pdf", width = 10, height = 14)
+ggsave("images/Dengue_estado.png", width = 10, height = 14, dpi = 750)
 
