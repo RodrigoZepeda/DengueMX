@@ -160,6 +160,7 @@ dengue_pasado  <- read_csv(c("panoramas_epidemiologicos_previos/processed/2016.c
   group_by(Anio, Estado) %>%
   mutate(n = if_else(n < lag(n, default = 0), lag(n, default = 0), n)) %>%
   mutate(Incidencia = n - lag(n, default = 0)) %>%
+  mutate(Incidencia = if_else(Incidencia < 0, 0, Incidencia)) %>%
   select(-n) %>%
   mutate(n = Incidencia)
 
@@ -180,11 +181,16 @@ dengue_all <- dengue_all %>%
   #bind_rows(dengue_2020_2022) %>%
   left_join(fechas, by = c("Semana_Epidemiologica", "Anio")) %>%
   mutate(Estado = str_remove_all(Estado,"\\*| \\*")) %>%
+  mutate(Estado = str_replace_all(Estado,"MEXICO","MÉXICO")) %>%
   mutate(Estado = case_when(
     str_detect(Estado,"CIUDAD|DISTRITO|CD") ~ "CIUDAD DE MÉXICO",
     str_detect(Estado,"MICHO") ~ "MICHOACÁN",
     str_detect(Estado,"COAH") ~ "COAHUILA",
     str_detect(Estado,"VERACRUZ") ~ "VERACRUZ",
+    str_detect(Estado,"YUCATAN") ~ "YUCATÁN",
+    str_detect(Estado,"POTOS") ~ "SAN LUIS POTOSÍ",
+    str_detect(Estado,"NUEVO LEON") ~ "NUEVO LEÓN",
+    str_detect(Estado,"QUERETARO") ~ "QUERÉTARO",
     TRUE ~ Estado
   )) %>%
   filter(!is.na(Estado))
@@ -219,4 +225,35 @@ dengue_all %>%
   coord_cartesian(xlim = c(ymd("2015/03/01"), today())) 
 ggsave("images/Dengue.pdf", width = 8, height = 4)
 ggsave("images/Dengue.png", width = 8, height = 4, dpi = 750, bg = "white")
+
+#Create plot by state
+dengue_all %>%
+  ungroup() %>%
+  arrange(fecha, Estado) %>%
+  group_by(Estado) %>%
+  mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
+  ggplot() +
+  geom_point(aes(x = fecha, y = n), size = 0.1, color = "gray75",
+             data = dengue_all) +
+  geom_line(aes(x = fecha, y = n), size = 0.75, color = "firebrick") +
+  facet_wrap(~Estado, scales = "free_y",nrow = 4) +
+  labs(
+    x = "",
+    y = "Casos probables",
+    title = glue::glue("Incidencia **estatal** de <span style = 'color:firebrick;'>casos probables de dengue</span> ", 
+                       "por fecha de inicio de síntomas"),
+    caption = glue::glue("Elaborada el {today()}"),
+    subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
+                          "Panoramas Epidemiológicos de Dengue 2017-2019")
+  ) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_date(date_minor_breaks = "6 months", date_breaks = "1 year",
+               date_labels = "%b-%y", expand = c(0, 0)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_markdown(),
+        plot.subtitle = element_text(size = 8, face = "italic", color = "gray25")) +
+  coord_cartesian(xlim = c(ymd("2015/03/01"), today())) 
+ggsave("images/Dengue_estado.pdf", width = 20, height = 6)
+ggsave("images/Dengue_estado.png", width = 20, height = 6, dpi = 750, bg = "white")
 
