@@ -11,7 +11,7 @@ Repositorio de los datos abiertos y scrappeados de dengue en México.
     + `processed` contiene los datos scrappeados de los panoramas epidemiológicos previos
 + `scripts` para la descarga y el formateo de datos
 
-![Casos de dengue en México](images/Dengue_predict.png)
+![Casos de dengue en México por entidad federativa](images/Dengue_estado.png)
 
 ## Colabora
 
