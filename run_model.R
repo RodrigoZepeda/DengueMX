@@ -1,5 +1,6 @@
 rm(list = ls())
-pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext)
+#devtools::install_github("AlbertoAlmuinha/boostime")
+pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, modeltime)
 
 #THIS MODEL IS A PROOF OF CONCEPT OF COURSE IT CAN GET BETTER IN SEVERAL WAYS
 #I JUST DON'T HAVE THE TIME RIGHT NOW
@@ -14,13 +15,25 @@ dengue_all <- read_rds("datos-limpios/dengue_2016_2022_mx.rds") %>%
   mutate(t = as.numeric(fecha - ymd("2015/03/01")) + 1) %>%
   mutate(logn = log(n))
 
+#Some checks
+# ggplot(dengue_all) +
+#   geom_line(aes(x = 2*pi*epiweek(fecha)/52, y = n, color = as.factor(epiyear(fecha)))) +
+#   theme_bw() +
+#   coord_polar()
+dengue_ts <- ts(dengue_all$n, freq=365.25/7, 
+                start=decimal_date(min(dengue_all$fecha)))
+TSstudio::ts_decompose(dengue_ts, type = "multiplicative")
+
 #Create BSTS model
 ss               <- AddSemilocalLinearTrend(list(), dengue_all$logn)
 ss               <- AddSeasonal(ss, dengue_all$logn, nseasons = 52)
-bsts.model       <- bsts(dengue_all$logn, state.specification = ss, niter = 500, ping=0, seed=2016)
+ss               <- AddSeasonal(ss, dengue_all$logn, season.duration = 52, 
+                                nseasons = length(unique(year(dengue_all$fecha))))
+bsts.model       <- bsts(dengue_all$logn, state.specification = ss, 
+                         niter = 2000, ping=500, seed=2016)
 burn             <- SuggestBurn(0.1, bsts.model)
 
-t_horizon <- 50
+t_horizon <- 52 - epiweek(max(dengue_all$fecha)) + 1
 p         <- predict.bsts(bsts.model, horizon = t_horizon, burn = burn, quantiles = c(0.1, .9))
 
 tibble(
