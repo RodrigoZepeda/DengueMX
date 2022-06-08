@@ -1,6 +1,6 @@
 rm(list = ls())
 #devtools::install_github("AlbertoAlmuinha/boostime")
-pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, modeltime)
+pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, cmdstanr)
 
 #THIS MODEL IS A PROOF OF CONCEPT OF COURSE IT CAN GET BETTER IN SEVERAL WAYS
 #I JUST DON'T HAVE THE TIME RIGHT NOW
@@ -9,20 +9,36 @@ pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, modeltime)
 dengue_all <- read_rds("datos-limpios/dengue_2016_2022_mx.rds") %>%
   group_by(fecha) %>%
   summarise(n = sum(n)) %>%
+  mutate(nraw = n) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
   mutate(n = rollmean(n, 3,  fill = 0, align = "right")) %>%
   filter(fecha >= ymd("2015/03/01")) %>%
   mutate(t = as.numeric(fecha - ymd("2015/03/01")) + 1) %>%
-  mutate(logn = log(n))
+  mutate(logn = log(n + 1)) %>%
+  mutate(log_nraw = log(nraw + 1))
+
+#splits <- initial_time_split(dengue_all, prop = 0.6)
+
+#model_arima_catboost <- boost_arima() %>%
+#  set_engine("arima_catboost", verbose = 0) %>%
+#  fit(logn ~ 1 + fecha + epiweek(fecha) + epiyear(fecha) + month(fecha), data = training(splits))
+
+#model_calibrate <- model_arima_catboost %>%
+#  modeltime_table() %>%
+#  modeltime_calibrate(new_data = testing(splits)) %>%
+#  modeltime_refit(data = dengue_all) 
+
+#model_forecast <- model_calibrate %>%
+#  modeltime_forecast(h = "1 year", actual_data = dengue_all) 
 
 #Some checks
 # ggplot(dengue_all) +
 #   geom_line(aes(x = 2*pi*epiweek(fecha)/52, y = n, color = as.factor(epiyear(fecha)))) +
 #   theme_bw() +
 #   coord_polar()
-dengue_ts <- ts(dengue_all$n, freq=365.25/7, 
-                start=decimal_date(min(dengue_all$fecha)))
-TSstudio::ts_decompose(dengue_ts, type = "multiplicative")
+#dengue_ts <- ts(dengue_all$n, freq=365.25/7, 
+#                start=decimal_date(min(dengue_all$fecha)))
+#TSstudio::ts_decompose(dengue_ts, type = "multiplicative")
 
 #Create BSTS model
 ss               <- AddSemilocalLinearTrend(list(), dengue_all$logn)
@@ -38,15 +54,21 @@ p         <- predict.bsts(bsts.model, horizon = t_horizon, burn = burn, quantile
 
 tibble(
   fecha    = c(dengue_all$fecha, max(dengue_all$fecha) + weeks(0:(t_horizon - 1))),
-  pred     = c(dengue_all$n, exp(p$mean)),
-  lower_ci = c(rep(0, length(dengue_all$n)), exp(p$interval[1,])),
-  upper_ci = c(rep(0, length(dengue_all$n)), exp(p$interval[2,])),
+  pred     = c(dengue_all$n, exp(p$mean)) - 1,
+  #model2      = exp(model_forecast$.value[1:(length(dengue_all$n) + t_horizon)]),
+  #model2_low  = exp(model_forecast$.conf_lo[1:(length(dengue_all$n) + t_horizon)]),
+  #model2_up   = exp(model_forecast$.conf_hi[1:(length(dengue_all$n) + t_horizon)]),
+  lower_ci = c(rep(0, length(dengue_all$n)), exp(p$interval[1,])) - 1,
+  upper_ci = c(rep(0, length(dengue_all$n)), exp(p$interval[2,])) - 1,
   color    = c(rep("Observado", length(dengue_all$n)), rep("Predicho", t_horizon))
 ) %>%
 ggplot(aes(x = fecha, y = pred)) + 
   geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.25,
               fill = "#12757E") +
+  #geom_ribbon(aes(ymin = model2_low, ymax = model2_up), alpha = 0.25,
+  #            fill = "red") +
   geom_line(aes(color = color, linetype = color, size = color)) +
+ #geom_line(aes(color = "red", size = color, y = model2)) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   theme_minimal() +
   labs(
