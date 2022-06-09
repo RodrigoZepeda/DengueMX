@@ -7,15 +7,26 @@ pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, cmdstanr)
 
 #Limpieza de la base
 dengue_all <- read_rds("datos-limpios/dengue_2016_2022_mx.rds") %>%
+  mutate(fecha = ymd(fecha)) %>%
   group_by(fecha) %>%
-  summarise(n = sum(n)) %>%
-  mutate(nraw = n) %>%
-  mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
+  summarise(n = sum(n))
+
+missing_dates <- tibble(fecha = seq(min(dengue_all$fecha, na.rm = T),
+                                    max(dengue_all$fecha, na.rm = T), by = "1 week"))
+
+dengue_all <- dengue_all %>%
+  right_join(missing_dates, by = "fecha") %>%
+  arrange(fecha) %>%
+  mutate(n.value = round(na.approx(n, maxgap = 4, rule = 2))) %>%
+  mutate(nraw = n.value) %>%
+  mutate(n = rollmean(nraw, 7,  fill = 0, align = "right")) %>%
   mutate(n = rollmean(n, 3,  fill = 0, align = "right")) %>%
   filter(fecha >= ymd("2015/03/01")) %>%
   mutate(t = as.numeric(fecha - ymd("2015/03/01")) + 1) %>%
   mutate(logn = log(n + 1)) %>%
   mutate(log_nraw = log(nraw + 1))
+
+dengue_all %>% write_excel_csv("datos-limpios/dengue_2015_2022_mx.csv")
 
 #splits <- initial_time_split(dengue_all, prop = 0.6)
 
@@ -26,26 +37,26 @@ dengue_all <- read_rds("datos-limpios/dengue_2016_2022_mx.rds") %>%
 #model_calibrate <- model_arima_catboost %>%
 #  modeltime_table() %>%
 #  modeltime_calibrate(new_data = testing(splits)) %>%
-#  modeltime_refit(data = dengue_all) 
+#  modeltime_refit(data = dengue_all)
 
 #model_forecast <- model_calibrate %>%
-#  modeltime_forecast(h = "1 year", actual_data = dengue_all) 
+#  modeltime_forecast(h = "1 year", actual_data = dengue_all)
 
 #Some checks
 # ggplot(dengue_all) +
 #   geom_line(aes(x = 2*pi*epiweek(fecha)/52, y = n, color = as.factor(epiyear(fecha)))) +
 #   theme_bw() +
 #   coord_polar()
-#dengue_ts <- ts(dengue_all$n, freq=365.25/7, 
+#dengue_ts <- ts(dengue_all$n, freq=365.25/7,
 #                start=decimal_date(min(dengue_all$fecha)))
 #TSstudio::ts_decompose(dengue_ts, type = "multiplicative")
 
 #Create BSTS model
 ss               <- AddSemilocalLinearTrend(list(), dengue_all$logn)
 ss               <- AddSeasonal(ss, dengue_all$logn, nseasons = 52)
-ss               <- AddSeasonal(ss, dengue_all$logn, season.duration = 52, 
+ss               <- AddSeasonal(ss, dengue_all$logn, season.duration = 52,
                                 nseasons = length(unique(year(dengue_all$fecha))))
-bsts.model       <- bsts(dengue_all$logn, state.specification = ss, 
+bsts.model       <- bsts(dengue_all$logn, state.specification = ss,
                          niter = 2000, ping=500, seed=2016)
 burn             <- SuggestBurn(0.1, bsts.model)
 
@@ -62,7 +73,7 @@ tibble(
   upper_ci = c(rep(0, length(dengue_all$n)), exp(p$interval[2,])) - 1,
   color    = c(rep("Observado", length(dengue_all$n)), rep("Predicho", t_horizon))
 ) %>%
-ggplot(aes(x = fecha, y = pred)) + 
+ggplot(aes(x = fecha, y = pred)) +
   geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.25,
               fill = "#12757E") +
   #geom_ribbon(aes(ymin = model2_low, ymax = model2_up), alpha = 0.25,
@@ -74,10 +85,10 @@ ggplot(aes(x = fecha, y = pred)) +
   labs(
     x = "",
     y = "Casos probables",
-    title = glue::glue("<span style = 'color:#92AF75;'>Casos probables de dengue</span> ", 
+    title = glue::glue("<span style = 'color:#92AF75;'>Casos probables de dengue</span> ",
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
-    subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
+    subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ",
                           "Panoramas Epidemiológicos de Dengue 2017-2019")
   ) +
   scale_y_continuous(labels = scales::comma) +
