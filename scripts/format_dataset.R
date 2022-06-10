@@ -199,6 +199,8 @@ dengue_all %>%
   write_excel_csv("datos-limpios/dengue_2016_2022_mx.csv") %>%
   write_rds("datos-limpios/dengue_2016_2022_mx.rds")
 
+dengue_all_plot <- dengue_all
+
 #Limpieza de la base
 dengue_all <- read_rds("datos-limpios/dengue_2016_2022_mx.rds") %>%
   mutate(fecha = ymd(fecha)) %>%
@@ -223,7 +225,7 @@ dengue_all <- dengue_all %>%
 dengue_all %>% write_excel_csv("datos-limpios/dengue_for_model_mx.csv")
 
 #Create plot
-dengue_all %>%
+dengue_all_plot %>%
   group_by(fecha) %>%
   summarise(n = sum(n)) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>%
@@ -254,7 +256,7 @@ ggsave("images/Dengue.png", width = 8, height = 4, dpi = 750, bg = "white")
 #Create plot by state
 set.seed(236857)
 colors <- colorRampPalette(c("#92AF75","#12757E"))(32)
-dengue_all %>%
+dengue_all_plot %>%
   ungroup() %>%
   arrange(fecha, Estado) %>%
   group_by(Estado) %>%
@@ -264,7 +266,7 @@ dengue_all %>%
   #           data = dengue_all) +
   #geom_line(aes(x = fecha, y = n), size = 0.75, color = "firebrick") +
   #geom_area(aes(x = fecha, y = n), size = 0.75, fill = "firebrick") +
-  geom_area(aes(x = fecha, y = n, fill = Estado), color = "#FFF9EF") +
+  geom_area(aes(x = fecha, y = n, fill = Estado)) +
   facet_wrap(~Estado, scales = "free_y",nrow = 8) +
   labs(
     x = "",

@@ -3,6 +3,7 @@ import pandas as pd
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
 import torch
+import subprocess
 import numpy as np
 from pytorch_forecasting import Baseline, DeepAR, TimeSeriesDataSet, NHiTS
 from pytorch_forecasting.data import NaNLabelEncoder

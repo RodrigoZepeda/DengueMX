@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import darts.utils.likelihood_models as Likelihood
 from darts import TimeSeries
+import subprocess
 import darts.utils.losses as Loss
 from darts.models import TCNModel, RNNModel, ExponentialSmoothing, BlockRNNModel, NBEATSModel, TFTModel, NHiTS
 from darts.dataprocessing.transformers import Scaler
@@ -66,7 +67,7 @@ deeptcn = NHiTS(
     n_epochs=20,
     likelihood = Likelihood.GammaLikelihood(),
     loss_fn = Loss.SmapeLoss(),
-    #optimizer_kwargs = {'lr': 1e-3},
+    #optimizer_kwargs = {'lr': 1e-5},
     add_encoders={'cyclic': {'future': ['month','year','week']}},
 )
 
@@ -87,3 +88,9 @@ prediction[["lower_ci", "median", "upper_ci"]] = np.exp(prediction[["value_0.05"
 
 pred_2.plot()
 prediction.to_csv("predicciones_DARTS_experimento.csv")
+
+try:
+    subprocess.call("./scripts/plot_results.R")
+    print("Plotted")
+except:
+    print("Not plotted")
