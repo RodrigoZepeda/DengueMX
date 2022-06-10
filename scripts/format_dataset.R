@@ -7,7 +7,7 @@ pacman::p_load(tidyverse, lubridate, readxl, glue, zoo, ggtext)
 dengue_data <- list.files(path = "datos-abiertos/", pattern = ".*.zip", full.names = TRUE)
 
 # | > Clean duplicates----
-dengue <- read_csv(dengue_data) %>% 
+dengue <- read_csv(dengue_data) %>%
   mutate(Fecha_Actualizacion = case_when(
     str_detect(FECHA_ACTUALIZACION,"/") ~ as.Date(FECHA_ACTUALIZACION, "%d/%m/%Y"),
     str_detect(FECHA_ACTUALIZACION,"-") ~ as.Date(FECHA_ACTUALIZACION, "%Y-%m-%d"),
@@ -29,86 +29,86 @@ dengue <- read_csv(dengue_data) %>%
 #DICCIONARIO -----
 
 # | > Estatus del caso ----
-caso   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+caso   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                      sheet = "CATÁLOGO ESTATUS_CASO")
-dengue <- dengue %>% 
+dengue <- dengue %>%
   left_join(caso %>% rename(ESTATUS_CASO = CLAVE), by = "ESTATUS_CASO") %>%
   rename(`Estatus Caso` = `DESCRIPCIÓN`) %>%
-  dplyr::select(-ESTATUS_CASO) 
+  dplyr::select(-ESTATUS_CASO)
 
 # | > PCR ----
-pcr   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+pcr   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                      sheet = "CATALOGO RESULTADO_PCR ")
-dengue <- dengue %>% 
+dengue <- dengue %>%
   left_join(pcr %>% rename(RESULTADO_PCR = CLAVE), by = "RESULTADO_PCR") %>%
   rename(`Resultado PCR` = `DESCRIPCIÓN`) %>%
-  select(-RESULTADO_PCR) 
+  select(-RESULTADO_PCR)
 
 # | > Dictamen ----
-dictamen   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+dictamen   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                     sheet = "CATÁLOGO DICTAMEN")
-dengue <- dengue %>% 
+dengue <- dengue %>%
   left_join(dictamen %>% rename(DICTAMEN = CLAVE), by = "DICTAMEN") %>%
   rename(`Dictamen` = `DESCRIPCIÓN`) %>%
-  select(-DICTAMEN) 
+  select(-DICTAMEN)
 
 # | > Institución ----
-institucion   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+institucion   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                          sheet = "CATÁLOGO INSTITUCION")
-dengue <- dengue %>% 
-  left_join(institucion %>% rename(INSTITUCION = CLAVE), 
+dengue <- dengue %>%
+  left_join(institucion %>% rename(INSTITUCION = CLAVE),
             by = c("INSTITUCION_UM_NOTIF" = "INSTITUCION")) %>%
   rename(`Institución Unidad Médica Notificante` = `DESCRIPCIÓN`) %>%
-  select(-INSTITUCION_UM_NOTIF) 
+  select(-INSTITUCION_UM_NOTIF)
 
 # | > Paciente ----
-paciente   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+paciente   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                             sheet = "CATÁLOGO TIPO_PACIENTE")
-dengue <- dengue %>% 
-  left_join(paciente %>% rename(TIPO_PACIENTE = CLAVE), 
+dengue <- dengue %>%
+  left_join(paciente %>% rename(TIPO_PACIENTE = CLAVE),
             by = "TIPO_PACIENTE") %>%
   rename(`Tipo de Paciente` = `DESCRIPCIÓN`) %>%
-  select(-TIPO_PACIENTE) 
+  select(-TIPO_PACIENTE)
 
 # | > Sexo ----
-sexo   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+sexo   <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                          sheet = "CATÁLOGO SEXO")
-dengue <- dengue %>% 
-  left_join(sexo %>% rename(SEXO = CLAVE), 
+dengue <- dengue %>%
+  left_join(sexo %>% rename(SEXO = CLAVE),
             by = "SEXO") %>%
   rename(`Sexo` = `DESCRIPCIÓN`) %>%
-  select(-SEXO) 
+  select(-SEXO)
 
 # | > Municipios y entidades----
-municipio  <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+municipio  <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                      sheet = "CATÁLOGO MUNICIPIO")
-entidad    <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx", 
+entidad    <- read_excel("datos-abiertos/diccionario/Catalogos_Dengue.xlsx",
                          sheet = "CATÁLOGO ENTIDAD")
 
 munent     <- municipio %>%
   left_join(entidad, by = "CLAVE_ENTIDAD") %>%
   mutate(CLAVE_MUNICIPIO = as.numeric(CLAVE_MUNICIPIO)) %>%
-  mutate(CLAVE_ENTIDAD = as.numeric(CLAVE_ENTIDAD)) 
+  mutate(CLAVE_ENTIDAD = as.numeric(CLAVE_ENTIDAD))
 
 tipo_loc   <- c("ASIG","RES","UM_NOTIF")
 
-dengue <- dengue %>% 
-  mutate(across(matches("MUNICIPIO|ENTIDAD"), 
+dengue <- dengue %>%
+  mutate(across(matches("MUNICIPIO|ENTIDAD"),
                 ~ as.numeric(.)))
 
 for (localidad in tipo_loc){
-  join_key_pairs        <- c("CLAVE_MUNICIPIO", "CLAVE_ENTIDAD")  
+  join_key_pairs        <- c("CLAVE_MUNICIPIO", "CLAVE_ENTIDAD")
   names(join_key_pairs) <- c(glue("MUNICIPIO_{localidad}"), glue("ENTIDAD_{localidad}"))
-  dengue <- dengue %>% 
+  dengue <- dengue %>%
     left_join(munent, by = join_key_pairs) %>%
     rename(!!glue("Municipio_{localidad}") := `MUNICIPIO`) %>%
     rename(!!glue("Entidad_{localidad}") := `ENTIDAD_FEDERATIVA`) %>%
     rename(!!glue("Abreviatura_entidad_{localidad}") := `ABREVIATURA`) %>%
-    select(-!!names(join_key_pairs)) 
+    select(-!!names(join_key_pairs))
 }
 
 # | > Catálogo si/no----
-dengue <- dengue %>% 
+dengue <- dengue %>%
   mutate(across(c(HABLA_LENGUA_INDIG:TOMA_MUESTRA),
                 ~ case_when(
                   as.numeric(.) == 1 ~ "Sí",
@@ -143,9 +143,9 @@ dengue_2020_2022 <- dengue %>%
 #   select(-n) %>%
 #   mutate(n = Incidencia)
 
-dengue_pasado  <- read_csv(c("panoramas_epidemiologicos_previos/processed/2016.csv", 
+dengue_pasado  <- read_csv(c("panoramas_epidemiologicos_previos/processed/2016.csv",
                              "panoramas_epidemiologicos_previos/processed/2017.csv",
-                             "panoramas_epidemiologicos_previos/processed/2018.csv", 
+                             "panoramas_epidemiologicos_previos/processed/2018.csv",
                              "panoramas_epidemiologicos_previos/processed/2019.csv",
                              "panoramas_epidemiologicos_previos/processed/2020.csv")) %>%
   select(Estado, `Probables (año pasado)`, Semana_Epidemiologica, Anio) %>%
@@ -199,20 +199,43 @@ dengue_all %>%
   write_excel_csv("datos-limpios/dengue_2016_2022_mx.csv") %>%
   write_rds("datos-limpios/dengue_2016_2022_mx.rds")
 
+#Limpieza de la base
+dengue_all <- read_rds("datos-limpios/dengue_2016_2022_mx.rds") %>%
+  mutate(fecha = ymd(fecha)) %>%
+  group_by(fecha) %>%
+  summarise(n = sum(n))
+
+missing_dates <- tibble(fecha = seq(min(dengue_all$fecha, na.rm = T),
+                                    max(dengue_all$fecha, na.rm = T), by = "1 week"))
+
+dengue_all <- dengue_all %>%
+  right_join(missing_dates, by = "fecha") %>%
+  arrange(fecha) %>%
+  mutate(n.value = round(na.approx(n, maxgap = 4, rule = 2))) %>%
+  mutate(nraw = n.value) %>%
+  mutate(n = rollmean(nraw, 7,  fill = 0, align = "right")) %>%
+  mutate(n = rollmean(n, 3,  fill = 0, align = "right")) %>%
+  filter(fecha >= ymd("2015/03/01")) %>%
+  mutate(t = as.numeric(fecha - ymd("2015/03/01")) + 1) %>%
+  mutate(logn = log(n + 1)) %>%
+  mutate(log_nraw = log(nraw + 1))
+
+dengue_all %>% write_excel_csv("datos-limpios/dengue_for_model_mx.csv")
+
 #Create plot
 dengue_all %>%
   group_by(fecha) %>%
   summarise(n = sum(n)) %>%
-  mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
+  mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>%
   ggplot() +
   geom_line(aes(x = fecha, y = n), size = 1, color = "#12757E") +
   labs(
     x = "",
     y = "Casos probables",
-    title = glue::glue("Incidencia de <span style = 'color:#12757E;'>casos probables de dengue</span> ", 
+    title = glue::glue("Incidencia de <span style = 'color:#12757E;'>casos probables de dengue</span> ",
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
-    subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ", 
+    subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ",
                           "Panoramas Epidemiológicos de Dengue 2017-2019")
   ) +
   theme_minimal() +
@@ -224,7 +247,7 @@ dengue_all %>%
         panel.background = element_rect(fill = "#FBFFFB"),
         plot.background  = element_rect(fill = "#FBFFFB"),
         plot.subtitle = element_text(size = 8, face = "italic", color = "gray25")) +
-  coord_cartesian(xlim = c(ymd("2015/03/01"), today())) 
+  coord_cartesian(xlim = c(ymd("2015/03/01"), today()))
 ggsave("images/Dengue.pdf", width = 8, height = 4)
 ggsave("images/Dengue.png", width = 8, height = 4, dpi = 750, bg = "white")
 
@@ -235,7 +258,7 @@ dengue_all %>%
   ungroup() %>%
   arrange(fecha, Estado) %>%
   group_by(Estado) %>%
-  mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>% 
+  mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>%
   ggplot() +
   #geom_point(aes(x = fecha, y = n), size = 0.1, color = "gray75",
   #           data = dengue_all) +
@@ -246,9 +269,9 @@ dengue_all %>%
   labs(
     x = "",
     y = "",
-    title = glue::glue("<br><span style = 'color:#12757E;'>Dengue</span> ", 
+    title = glue::glue("<br><span style = 'color:#12757E;'>Dengue</span> ",
                        ""),
-    caption = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud (2020-{year(today())}) y ", 
+    caption = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud (2020-{year(today())}) y ",
                          "Panoramas Epidemiológicos de Dengue 2017-2019. Elaborada el {today()}"),
     subtitle = glue::glue("<span style = 'color:#92AF75;'>Casos probables por fecha de inicio de síntomas</span>")
   ) +
