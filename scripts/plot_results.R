@@ -6,13 +6,15 @@ pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, cmdstanr, reticulate)
 experimento <- read_csv("predicciones_DARTS_experimento.csv")
 dengue_all  <- read_csv("datos-limpios/dengue_for_model_mx.csv")
 
-ggplot(experimento) +
+experimento %>%
+  filter(date < ymd("2023/03/01")) %>%
+ggplot() +
   geom_line(aes(x = fecha, y = n, color = "Predicho", size = "Predicho"),
            data = dengue_all) +
   geom_line(aes(x = date, y = median, color = "Predicho",
-                linetype = "Predicho", size = "Predicho"), data = experimento) +
+                linetype = "Predicho", size = "Predicho")) +
   geom_ribbon(aes(x = date, ymin = lower_ci, y = median, ymax = upper_ci), alpha = 0.25,
-              fill = "#12757E", data = experimento) +
+              fill = "#12757E") +
   #geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.25,
   #            fill = "#12757E") +
   #geom_ribbon(aes(ymin = model2_low, ymax = model2_up), alpha = 0.25,
