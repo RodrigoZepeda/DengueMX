@@ -1,4 +1,5 @@
-rm(list = ls())
+#!/usr/bin/env Rscript
+
 pacman::p_load(bsts, tidyverse, lubridate, glue, ggtext, cmdstanr, reticulate)
 
 #Limpieza de la base

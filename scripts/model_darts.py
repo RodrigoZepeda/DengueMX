@@ -12,7 +12,7 @@ import warnings
 from datetime import timedelta
 warnings.filterwarnings("ignore")
 import logging
-import optuna as tuna
+#import optuna as tuna
 logging.disable(logging.CRITICAL)
 
 
@@ -31,25 +31,6 @@ training_cutoff = data.date.max() - timedelta(weeks=weeks_to_predict)
 train, val = series.split_after(training_cutoff)
 #train.plot()
 #val.plot()
-
-#COVARIATES
-covariates = datetime_attribute_timeseries(series, attribute="year", one_hot=False)
-covariates = covariates.stack(
-    datetime_attribute_timeseries(series, attribute="month", one_hot=True)
-)
-covariates = covariates.stack(
-    TimeSeries.from_times_and_values(
-        times=series.time_index,
-        values=np.arange(len(series)),
-        columns=["linear_increase"],
-    )
-)
-
-#TRANSFORM COVARIATES
-scaler_covs = Scaler()
-cov_train, cov_val = covariates.split_after(training_cutoff)
-scaler_covs.fit(cov_train)
-covariates_transformed = scaler_covs.transform(covariates)
 
 # reproducibility
 np.random.seed(230098)
@@ -90,7 +71,7 @@ pred_2.plot()
 prediction.to_csv("predicciones_DARTS_experimento.csv")
 
 try:
-    subprocess.call("./scripts/plot_results.R")
+    subprocess.call("scripts/plot_results.R")
     print("Plotted")
 except:
     print("Not plotted")
