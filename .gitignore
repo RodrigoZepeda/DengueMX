@@ -6,6 +6,8 @@ __pycache__/
 *$py.class
 .DS_Store
 .idea/
+cmdstan/*
+
 # History files
 .Rhistory
 .Rapp.history

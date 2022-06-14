@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 rm(list = ls())
 pacman::p_load(tidyverse, lubridate, readxl, glue, zoo, ggtext)
 
