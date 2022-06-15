@@ -12,7 +12,7 @@ data {
   int<lower=1> year[N]; //Year number
   int<lower=1> epiweek_predict[N_predict]; //Week number
   int<lower=1> year_predict[N_predict]; //Year number
-  int<lower=0> cases[N]; //Number of cases per time moment N
+  real<lower=0> log_cases[N]; //Number of cases per time moment N
 }
 
 transformed data {
@@ -56,13 +56,13 @@ model {
     beta_year[yr]  ~ double_exponential(beta_year[yr - 1], sigma_yr);
   
   for (n in 1:N)
-    cases[n] ~ neg_binomial_2_log(log(100.0)*mu[n], phi);
+    log_cases[n] ~ normal(log(100.0)*mu[n], phi);
 }
 
 generated quantities {
   vector[N + N_predict] mu_predict;
   vector[Nyears + Nyears_predict] beta_year_predict;
-  real cases_predict[N + N_predict];
+  real log_cases_predict[N + N_predict];
   int<lower=1> epiweek_predict_complete[N + N_predict]; //Week number
   int<lower=1> year_predict_complete[N + N_predict]; //Year number
   
@@ -89,27 +89,7 @@ generated quantities {
       mu_predict[n] = mu[n];
     }
     
-    cases_predict[n] = neg_binomial_2_log_rng(log(100.0)*mu_predict[n], phi);
+    log_cases_predict[n] = normal_rng(log(100.0)*mu_predict[n], phi);
     
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -37,13 +37,12 @@ datos  <- list(
   month_predict   = predict_df$month,
   year            = dengue_data$normalized_year,
   year_predict    = predict_df$normalized_year,
-  cases           = dengue_data$nraw
+  log_cases        = dengue_data$log_nraw
 ) 
 
 # function form 2 with an argument named `chain_id`
 initf2 <- function(chain_id = 1) {
-  list(alpha        = rnorm(1, mean(datos$cases), sd(datos$cases)),
-       beta_week    = rnorm(datos$Nweeks),
+  list(beta_week    = rnorm(datos$Nweeks),
        beta_year    = rnorm(datos$Nyears),
        beta_month   = rnorm(datos$Nmonths),
        y_err        = runif(datos$N, -0.5, 0.5),
@@ -72,7 +71,7 @@ model_sample <- dengue_model$sample(data = datos, chains = chains,
                                   threads_per_chain = 4)
 
 
-modelo_ajustado <- summarise_draws(model_sample$draws("cases_predict"), 
+modelo_ajustado <- summarise_draws(model_sample$draws("log_cases_predict"), 
                                    ~ quantile(., probs = c(0.005, 0.025, 0.05, 
                                                            0.125, 0.25, 0.325,0.4, 0.5,
                                                            0.6, 0.675,0.75, 0.875, 0.95, 
@@ -82,8 +81,8 @@ prediction <- modelo_ajustado %>% bind_cols(bind_rows(dengue_data,predict_df))
 prediction %>%
   filter(year(fecha) <= 2022) %>%
 ggplot(aes(x = fecha)) +
-  geom_line(aes(y = `50%`), color = "firebrick") +
+  geom_line(aes(y = exp(`50%`)), color = "firebrick") +
   #geom_line(aes(y = n), color = "black") +
-  geom_ribbon(aes(ymin = `2.5%`, ymax = `97.5%`), alpha = 0.1, fill = "firebrick") +
+  geom_ribbon(aes(ymin = exp(`2.5%`), ymax = exp(`97.5%`)), alpha = 0.1, fill = "firebrick") +
   geom_point(aes(y = n.value), data = dengue_data) +
   theme_classic()
