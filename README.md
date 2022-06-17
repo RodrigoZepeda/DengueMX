@@ -1,5 +1,7 @@
 # DengueMX
 
+>  :warning:  **El modelo no está listo aún**: No le hagas caso
+
 ![Casos de dengue en México](images/Dengue_predict.png)
 
 Repositorio de los datos abiertos y scrappeados de dengue en México.
