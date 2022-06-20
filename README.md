@@ -1,7 +1,5 @@
 # DengueMX
 
->  :warning:  **El modelo no está listo aún**: No le hagas caso
-
 ![Casos de dengue en México](images/Dengue_predict.png)
 
 Repositorio de los datos abiertos y scrappeados de dengue en México.
@@ -12,6 +10,9 @@ Repositorio de los datos abiertos y scrappeados de dengue en México.
     + `import` contiene el código de Python para importar los panoramas (un código por año).
     + `processed` contiene los datos scrappeados de los panoramas epidemiológicos previos
 + `scripts` para la descarga y el formateo de datos
+    + `Descarga.py` para descarga diaria de los datos màs nuevos
+    + `format_dataset.R` para correr los datos nuevos y ponerlos para el modelo
+    + `model_bayes.R` el modelo
 
 ![Casos de dengue en México por entidad federativa](images/Dengue_estado.png)
 

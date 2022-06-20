@@ -4,6 +4,7 @@
 data {
   int<lower=1> N;
   int<lower=1> N_predict;
+  int<lower=0> max_autorregresive_order; //AR component
   int<lower=1> Nyears; //Number of years
   int<lower=0> Nyears_predict; //Number of years
   int<lower=1,upper=12> Nmonths; //Number of months
@@ -22,38 +23,74 @@ transformed data {
 // The parameters accepted by the model. Our model
 // accepts two parameters 'mu' and 'sigma'.
 parameters {
-  vector[Nweeks]  beta_week;
-  vector[Nyears]  beta_year;
-  real<lower=0>   beta; 
-  real<lower=0>   phi;
+  vector[max_autorregresive_order]  beta_AR;
+  vector[max_autorregresive_order]  error_AR;
+  
+  //Mean parametrizations for centering
+  vector[Nweeks] Z_week;
+  vector[Nyears] Z_year;
   
   //Variance
   real<lower=0> sigma_sq;
   real<lower=0> sigma_week;
   real<lower=0> sigma_yr;
+  real<lower=0> sigma_AR;
+  real<lower=0> phi;
   
 }
 
 transformed parameters {
   real mu[N];
+  vector[Nweeks]  beta_week;
+  vector[Nyears]  beta_year;
   
-  for (n in 1:N)
+  beta_week[1] = sigma_week*Z_week[1];
+  if (Nweeks > 1){
+    for (week in 2:Nweeks){
+      beta_week[week] = beta_week[week - 1] + sigma_week*Z_week[week];
+    }
+  }
+  
+  beta_year[1] = sigma_yr*Z_year[1];
+  if (Nyears > 1){
+    for (yr in 2:Nyears){
+      beta_year[yr] = beta_year[yr - 1] + sigma_yr*Z_year[yr];
+    }
+  }
+  
+  
+  for (n in 1:N){
     mu[n] = beta_week[epiweek[n]] + beta_year[year[n]];
+    
+    //Add AR to model
+    if (max_autorregresive_order > 0){
+      //Loop through AR
+      for (r in 1:max_autorregresive_order){
+        if (n - r > 0){
+          mu[n] += beta_AR[r]*log_cases[n - r];
+        } else {
+          mu[n] += error_AR[r];
+        }
+      }
+    }
+  }
 }
 
 model {
-  sigma_sq   ~ double_exponential(0, 1);
-  sigma_week ~ double_exponential(0, sigma_sq);
-  sigma_yr   ~ double_exponential(0, sigma_sq);
-  phi        ~ double_exponential(0, 1);
+  sigma_sq   ~ cauchy(0, 2.5);
+  sigma_week ~ normal(0, sigma_sq);
+  sigma_yr   ~ normal(0, sigma_sq);
+  sigma_AR   ~ cauchy(0, 2.5);
+  error_AR   ~ std_normal();
+  phi        ~ cauchy(0, 2.5);
+  Z_week     ~ std_normal();
+  Z_year     ~ std_normal();
   
-  beta_week[1] ~ double_exponential(0, sigma_week);
-  for (week in 2:Nweeks)
-    beta_week[week]  ~ double_exponential(beta_week[week - 1], sigma_week);
-  
-  beta_year[1]  ~ double_exponential(0, sigma_yr);
-  for (yr in 2:Nyears)  
-    beta_year[yr]  ~ double_exponential(beta_year[yr - 1], sigma_yr);
+  if (max_autorregresive_order > 1){
+    for (r in 1:max_autorregresive_order){
+      beta_AR[r] ~ normal(0, sigma_AR);
+    }
+  }
   
   for (n in 1:N)
     log_cases[n] ~ normal(log(100.0)*mu[n], phi);
@@ -63,13 +100,14 @@ generated quantities {
   vector[N + N_predict] mu_predict;
   vector[Nyears + Nyears_predict] beta_year_predict;
   real log_cases_predict[N + N_predict];
+  
   int<lower=1> epiweek_predict_complete[N + N_predict]; //Week number
   int<lower=1> year_predict_complete[N + N_predict]; //Year number
   
   //Simulate beta for years
   for (yr in 1:(Nyears + Nyears_predict)){
     if (yr > year_observed_max){
-      beta_year_predict[yr] = double_exponential_rng(beta_year_predict[yr - 1], sigma_yr);
+      beta_year_predict[yr] = normal_rng(beta_year_predict[yr - 1], sigma_yr);
     } else {
       beta_year_predict[yr] = beta_year[yr];
     }
@@ -81,8 +119,18 @@ generated quantities {
     if (n > N){ 
       year_predict_complete[n]    =  year_predict[n - N];
       epiweek_predict_complete[n] =  epiweek_predict[n - N];  
-      mu_predict[n] = beta_week[epiweek_predict_complete[n]] +
+      
+      mu_predict[n] = beta_week[epiweek_predict_complete[n]] + 
         beta_year_predict[year_predict_complete[n]];
+        
+      for (r in 1:max_autorregresive_order){
+        if (n - r > N){
+          mu_predict[n] += beta_AR[r]*log_cases_predict[n - r];
+        } else {
+          mu_predict[n] += beta_AR[r]*log_cases[n - r];
+        }
+      }  
+        
     } else {
       year_predict_complete[n]    =  year[n];
       epiweek_predict_complete[n] =  epiweek[n];    
