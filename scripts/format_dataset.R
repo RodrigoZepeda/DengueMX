@@ -224,7 +224,7 @@ dengue_all <- dengue_all %>%
   mutate(logn = log(n + 1)) %>%
   mutate(log_nraw = log(nraw + 1))
 
-dengue_all %>% write_excel_csv("datos-limpios/dengue_for_model_mx.csv")
+dengue_all %>% write_excel_csv("datos/dengue_for_model_mx.csv")
 
 #Create plot
 dengue_all_plot %>%
