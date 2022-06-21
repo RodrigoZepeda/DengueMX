@@ -103,7 +103,7 @@ prediction <- modelo_ajustado %>%
   bind_cols(bind_rows(dengue_data, predict_df))
 
 
-ggplot(prediction) +
+predplot <- ggplot(prediction) +
   geom_vline(aes(xintercept = mediana), data = max_chain, linetype = "dotted") +
   geom_ribbon(aes(x = fecha, ymin = exp(`2.5%`), ymax = exp(`97.5%`)), alpha = 0.1,
               fill = "#12757E") +
@@ -121,18 +121,19 @@ ggplot(prediction) +
     y = "Casos probables",
     title = glue::glue("<span style = 'color:#92AF75;'>Casos probables de dengue</span> ",
                        "en México por fecha de inicio de síntomas"),
-    caption = glue::glue("Elaborada el {today()}.\nFuente: Datos Abiertos de la Secretaría de Salud 2020-{year(today())} y ",
+    caption = glue::glue("Elaborada el {today()}.<br>**Fuente:** Datos Abiertos de la Secretaría de Salud 2020-{year(today())} y ",
                          "Panoramas Epidemiológicos de Dengue 2017-2019."),
-    subtitle = glue::glue("Modelo bayesiano de series de tiempo | Github: RodrigoZepeda/DengueMX")
+    subtitle = glue::glue("Modelo bayesiano de series de tiempo | **Github:** RodrigoZepeda/DengueMX")
   ) +
   scale_y_continuous(labels = scales::comma) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),
         plot.title = element_markdown(),
+        plot.caption = element_markdown(),
         legend.position = "bottom",
         plot.caption = element_text(size = 6),
         panel.background = element_rect(fill = "#FBFFFB"),
         plot.background  = element_rect(fill = "#FBFFFB"),
-        plot.subtitle    = element_text(size = 8, face = "italic", color = "gray25")) +
+        plot.subtitle    = element_markdown(size = 8, face = "italic", color = "gray25")) +
   scale_color_manual("Incidencia semanal:", 
                      values = c("Observado" = "#92AF75", "Predicho" = "#12757E")) +
   scale_linetype_manual("Incidencia semanal:", 
@@ -142,7 +143,7 @@ ggplot(prediction) +
   geom_label(aes(x = mediana, y = 20000, 
                  label = glue("Fecha del pico: {mediana}\nentre {lower} y {upper}")), 
              data = max_chain, size = 2)
-ggsave("images/Dengue_predict.pdf", width = 8, height = 5)
-ggsave("images/Dengue_predict.png", width = 8, height = 5, dpi = 750, bg = "white")
+ggsave("images/Dengue_predict.pdf", predplot, width = 8, height = 5)
+ggsave("images/Dengue_predict.png", predplot, width = 8, height = 5, dpi = 750, bg = "white")
 
 
