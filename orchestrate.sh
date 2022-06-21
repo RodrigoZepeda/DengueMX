@@ -6,4 +6,4 @@ date=$(date '+%Y-%m-%d')
 /usr/bin/R < /home/rodrigo/DengueMX/scripts/model_bayes.R --no-save
 /usr/bin/git -C /home/rodrigo/DengueMX add .
 /usr/bin/git -C /home/rodrigo/DengueMX commit -m "Actualización ${date}"
-/usr/bin/git -C /home/rodrigo/DengueMX push origin main
+/usr/bin/git -C /home/rodrigo/DengueMX push origin lognormal
