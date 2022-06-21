@@ -224,7 +224,7 @@ dengue_all <- dengue_all %>%
   mutate(logn = log(n + 1)) %>%
   mutate(log_nraw = log(nraw + 1))
 
-dengue_all %>% write_excel_csv("datos/dengue_for_model_mx.csv")
+dengue_all %>% write_excel_csv("datos-processed/dengue_for_model_mx.csv")
 
 #Create plot
 dengue_all_plot %>%
@@ -279,7 +279,6 @@ dengue_all_plot %>%
                          "Panoramas Epidemiológicos de Dengue 2017-2019. Elaborada el {today()}"),
     subtitle = glue::glue("<span style = 'color:#92AF75;'>Casos probables por fecha de inicio de síntomas</span>")
   ) +
-  theme_minimal() +
   scale_y_continuous(labels = scales::comma) +
   scale_x_date(date_minor_breaks = "6 months", date_breaks = "1 year",
                date_labels = "%Y", expand = c(0, 0)) +
@@ -294,7 +293,7 @@ dengue_all_plot %>%
         axis.title.y     = element_markdown(color = "black"),
         axis.text        = element_text(color = "black"),
         legend.position  = "none",
-        panel.border     = element_rect(color = "black", fill = NA, size = 1)) +
+        panel.border     = element_blank()) +
   coord_cartesian(xlim = c(ymd("2015/03/01"), today())) +
   scale_fill_manual(values = sample(colors))
 ggsave("images/Dengue_estado.pdf", width = 10, height = 14)
