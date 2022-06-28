@@ -141,7 +141,7 @@ ggplot(prediction) +
                     values = c("Observado" = 1, "Predicho" = 0.5)) +
   geom_label(aes(x = mediana, y = 20000, 
                  label = glue("Fecha del pico: {mediana}\nentre {lower} y {upper}")), 
-             data = max_chain, size = 2)
+             data = max_chain, size = 2, fill = "#FBFFFB")
 ggsave("images/Dengue_predict.pdf", width = 8, height = 5)
 ggsave("images/Dengue_predict.png", width = 8, height = 5, dpi = 750, bg = "white")
 
