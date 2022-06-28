@@ -240,7 +240,7 @@ dengall <- dengue_all_plot %>%
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
     subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ",
-                          "Panoramas Epidemiológicos de Dengue 2017-2019")
+                          "Panoramas Epidemiológicos de Dengue 2016-2019")
   ) +
   theme_minimal() +
   scale_y_continuous(labels = scales::comma) +
@@ -276,7 +276,8 @@ dengall <- dengue_all_plot %>%
     title = glue::glue("<br><span style = 'color:#12757E;'>Dengue</span> ",
                        ""),
     caption = glue::glue("**Fuente:** Datos Abiertos de la Secretaría de Salud (2020-{year(today())}) y ",
-                         "Panoramas Epidemiológicos de Dengue 2017-2019. Elaborada el {today()}"),
+                         "Panoramas Epidemiológicos de Dengue 2016-2019. Elaborada el {today()}<br>
+                         **Github:** RodrigoZepeda/DengueMX"),
     subtitle = glue::glue("<span style = 'color:#92AF75;'>Casos probables por fecha de inicio de síntomas</span>")
   ) +
   scale_y_continuous(labels = scales::comma) +
