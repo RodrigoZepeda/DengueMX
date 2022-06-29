@@ -47,6 +47,7 @@ for (n in 1:N_predict){
 }
   
 chains = 1; iter_warmup = 100; nsim = 200; pchains = 1; 
+#FIXME FIX PARAMETERS AS IN MODEL_BAYES.R
 datos  <- list(
   N         = nrow(clima_data),
   N_predict = N_predict,
