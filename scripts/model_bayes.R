@@ -1,7 +1,27 @@
 #Bayesian model
+rm(list = ls())
 pacman::p_load(tidyverse, cmdstanr, bayestestR, lubridate, posterior, ggtext, glue)
 
 dengue_data <- read_csv("datos-limpios/dengue_for_model_mx.csv")  
+
+clima_data  <- read_rds("datos-clima/processed/Clima_info.rds") %>%
+  mutate(MES_NUM = as.numeric(MES_NUM)) %>%
+  filter(ANIO >= 2014) %>%
+  select(-ANUAL, -FECHA_PROXY, -MES) %>%
+  filter(ENTIDAD == "NACIONAL") %>%
+  select(-ENTIDAD) %>%
+  pivot_wider(id_cols = c(ANIO, MES_NUM), names_from = VARIABLE, values_from = VALOR) %>%
+  arrange(ANIO, MES_NUM) %>%
+  filter(!is.nan(Precipitacion))
+
+clima_stan <- clima_data %>%
+  select(-ANIO, -MES_NUM) %>%
+  as.matrix
+
+clima_fechas_stan <- clima_data %>%
+  select(ANIO, MES_NUM) %>%
+  mutate(ANIO = ANIO - (min(ANIO) - 1)) %>%
+  as.matrix
 
 #Check pacf(dengue_data$log_nraw) for AR(p)
 max_autocorrelation_order <- 5
@@ -14,46 +34,47 @@ dengue_data <- dengue_data %>%
   mutate(month   = month(fecha)) %>%
   mutate(normalized_year = year - min(year) + 1)
 
+ano_mes_semana_dengue <- dengue_data %>%
+  select(year, month, epiweek) %>%
+  mutate(year = year - !!min(clima_data$ANIO) + 1) %>%
+  as.matrix
+
 options(mc.cores = parallel::detectCores())
 
-predict_df <- tibble(fecha = seq(max(dengue_data$fecha) + weeks(1),
-                    max(dengue_data$fecha) + weeks(55),
-                    by = "1 week"))
-
-predict_df <- predict_df %>%
-  mutate(year = year(fecha)) %>%
-  mutate(epiweek = epiweek(fecha)) %>%
-  mutate(month = month(fecha)) %>%
-  mutate(normalized_year = year - min(dengue_data$year) + 1)
-
-chains = 4; iter_warmup = 1000; nsim = 11000; pchains = 4; 
+chains = 1; iter_warmup = 100; nsim = 200; pchains = 1; 
 datos  <- list(
-  N                        = nrow(dengue_data),
-  N_predict                = nrow(predict_df),
-  Nyears                   = length(unique(dengue_data$normalized_year)),
-  Nyears_predict           = length(setdiff(predict_df$year, dengue_data$year)),
-  Nmonths                  = length(unique(dengue_data$month)),
-  Nweeks                   = length(unique(dengue_data$epiweek)),
-  epiweek                  = dengue_data$epiweek,
-  epiweek_predict          = predict_df$epiweek,
-  month                    = dengue_data$month,
-  month_predict            = predict_df$month,
-  max_autorregresive_order = max_autocorrelation_order, 
-  year                     = dengue_data$normalized_year,
-  year_predict             = predict_df$normalized_year,
-  log_cases                = dengue_data$log_nraw
+  #Variables de clima
+  N_clima          = nrow(clima_stan),
+  N_anios_clima    = length(unique(clima_fechas_stan[,1])),
+  N_vars           = ncol(clima_stan),
+  N_meses_clima    = length(unique(clima_fechas_stan[,2])),
+  datos_clima      = clima_stan,
+  anio_mes_clima   = clima_fechas_stan,
+  
+  #Qué tan después empiezan los casos de dengue resp a clima
+  lag_dengue_clima = min(ano_mes_semana_dengue[,1]) - 1,
+    
+  #Variables de dengue
+  N_dengue              = nrow(dengue_data),
+  N_anios_dengue        = length(unique(dengue_data$year)),
+  N_semanas_dengue      = length(unique(dengue_data$epiweek)),
+  dengue                = dengue_data$log_nraw,
+  anio_mes_semana_dengue = ano_mes_semana_dengue,
+  
+  #Parámetros de predicción
+  N_predict = 2,
+  anio_mes_semana_dengue_predict = ano_mes_semana_dengue[1:2,],
+  
+  #Hiperparámetros
+  max_autorregresive_order_dengue = 5
 ) 
 
 # function form 2 with an argument named `chain_id`
 initf2 <- function(chain_id = 1) {
-  list(beta_week    = rnorm(datos$Nweeks),
-       beta_year    = rnorm(datos$Nyears),
-       beta_month   = rnorm(datos$Nmonths),
-       y_err        = runif(datos$N, -0.5, 0.5),
-       mu           = rnorm(datos$N),
-       sigma_sq     = abs(rnorm(datos$N))
-  )}
-
+  list(beta_semana_dengue    = rnorm(datos$N_semanas_dengue),
+       beta_anio_dengue     = rnorm(datos$N_anios_dengue),
+       sigma_sq              = abs(rnorm(1)))
+  }
 
 
 # generate a list of lists to specify initial values
@@ -75,7 +96,7 @@ model_sample <- dengue_model$sample(data = datos, chains = chains,
                                   threads_per_chain = 4)
 
 #Get each chain simulation to check when does the maximum per year occur and give a CI
-log_cases       <- model_sample$draws("log_cases_predict") %>% 
+log_cases       <- model_sample$draws("mu_dengue") %>% 
   as_draws_df() %>% 
   select(-starts_with(".")) %>% 
   t() %>%
