@@ -81,10 +81,12 @@ $$g(d_i) \sim \textrm{Normal}(m_i, \phi)$$
 con $\phi \sim\text{HalfCauchy}(0, 2.5)$ y $m_i$ dada por:
 $$m_i = \alpha_{\text{Año} (i)} + \alpha_{\text{Semana} (i)} + \sum_{k=1}^M \alpha^k_{\text{Clima}} \cdot \beta^k_{\text{Mes} (i)} + \sum_{p=1}^R \alpha^p_{\text{AR}} \cdot g(d_{i-p})$$
 
-donde $\alpha^p_{\text{AR}} \sim \text{Normal}(0, \sigma^2_{AR})$ y $\alpha^k_{\text{Clima}} \sim \text{Normal}(0, \sigma^2_{\text{Clima}})$ con las _a priori_ dadas por:
+donde 
+$$\alpha^p_{\text{AR}} \sim \text{Normal}(0, \sigma^2_{AR}) \alpha^k_{\text{Clima}} \sim \text{Normal}(0, \sigma^2_{\text{Clima}})$$ 
+con las _a priori_ dadas por:
 $$\sigma^2_{AR}\sim\text{HalfCauchy}(0, \sigma^2) \quad \text{y} \quad \sigma^2_{Clima}\sim\text{HalfCauchy}(0, \sigma^2).$$
 
 Las variables anuales y semanales tienen una estructura jerárquica dada por:
 $$\alpha_{\text{Año}} \sim \text{Normal}(\alpha_{\text{Año} - 1},\sigma^2_{\alpha_\text{Año}}) \text{ y } \alpha_{\text{Semana}} \sim \text{Normal}(\alpha_{\text{Semana} - 1},\sigma^2_{\alpha_\text{Semana}}).$$
 
-donde $\sigma^2_{\alpha_\text{Semana}},\sigma^2_{\alpha_{\text{Semana}}}\sim\text{HalfCauchy}(0, \sigma^2)$ y $\sigma^2\sim\text{HalfCauchy}(0, 2.5)$. 
+donde $$\sigma^2_{\alpha_\text{Semana}},\sigma^2_{\alpha_{\text{Semana}}}\sim\text{HalfCauchy}(0, \sigma^2) \text{ y  }\sigma^2\sim\text{HalfCauchy}(0, 2.5).$$ 
