@@ -90,7 +90,7 @@ con $\phi \sim\text{HalfCauchy}(0, 2.5)$ y $m_i$ dada por:
 $$m_i = \alpha_{\text{Año} (i)} + \alpha_{\text{Semana} (i)} + \sum_{k=1}^M \alpha^k_{\text{Clima}} \cdot \beta^k_{\text{Mes} (i)} + \sum_{p=1}^R \alpha^p_{\text{AR}} \cdot g(d_{i-p})$$
 
 donde 
-$$\alpha^p_{\text{AR}} \sim \text{Normal}(0, \sigma^2_{AR}) \alpha^k_{\text{Clima}} \sim \text{Normal}(0, \sigma^2_{\text{Clima}})$$ 
+$$\alpha^p_{\text{AR}} \sim \text{Normal}(0, \sigma^2_{AR}) \text{ y } \alpha^k_{\text{Clima}} \sim \text{Normal}(0, \sigma^2_{\text{Clima}})$$ 
 con las _a priori_ dadas por:
 $$\sigma^2_{AR}\sim\text{HalfCauchy}(0, \sigma^2) \quad \text{y} \quad \sigma^2_{Clima}\sim\text{HalfCauchy}(0, \sigma^2).$$
 
