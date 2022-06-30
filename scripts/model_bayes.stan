@@ -183,6 +183,7 @@ parameters {
   real<lower=0> sigma_dengue_clima;
   real<lower=0> sigma_AR;
   real<lower=0> phi_dengue;
+  real mu_beta_anio_dengue;
   
 }
 
@@ -221,7 +222,7 @@ transformed parameters {
   
   //Prior covariance
   Sigma_clima = quad_form_diag(Omega_clima, tau_clima);
-    
+
   //Prior for years
   beta_year_super_clima[1] = sigma_sq_year_prior_clima*Z_year_prior_clima[1];
   if (N_anios_clima > 1){
@@ -269,14 +270,14 @@ transformed parameters {
       beta_semana_dengue[week] = beta_semana_dengue[week - 1] + sigma_semana_dengue*Z_dengue_semana[week];
     }
   }
-  
+
   //Dinámica de efecto anual de dengue
-  beta_anio_dengue[1] = sigma_anio_dengue*Z_dengue_anio[1];
-  if (N_anios_dengue > 1){
+  beta_anio_dengue = mu_beta_anio_dengue + sigma_anio_dengue*Z_dengue_anio;
+  /*if (N_anios_dengue > 1){
     for (yr in 2:N_anios_dengue){
-      beta_anio_dengue[yr] = beta_anio_dengue[yr - 1] + sigma_anio_dengue*Z_dengue_anio[yr];
+      beta_anio_dengue[yr] = beta_anio_dengue[yr - 1] + delta_anio_dengue[yr - 1] + sigma_anio_dengue*Z_dengue_anio[yr];
     }
-  }
+  }*/
   
   //Creamos la media de dengue
   for (n in 1:N_dengue){
@@ -343,12 +344,13 @@ model {
   sigma_semana_dengue ~ cauchy(0, sigma_sq);
   sigma_anio_dengue   ~ cauchy(0, sigma_sq);
   sigma_dengue_clima  ~ cauchy(0, 2.5);
-  sigma_AR            ~ cauchy(0, 2.5);
-  phi_dengue          ~ cauchy(0, 2.5);
+  sigma_AR            ~ cauchy(0.0, 2.5);
+  phi_dengue          ~ cauchy(0.0, 2.5);
   
   beta_dengue_AR      ~ normal(0.0, sigma_AR);
   beta_dengue_clima   ~ normal(0.0, sigma_dengue_clima);
   error_dengue        ~ normal(0.0, phi_dengue);
+  
 }
 
 
@@ -356,7 +358,7 @@ generated quantities {
   
   vector[N_dengue + N_dengue_predict] mu_dengue_predict;
   vector[N_dengue + N_dengue_predict] dengue_predict;
-  vector[max_anio_dengue_predict - (min_anio_dengue - 1)]  beta_anio_dengue_predict;
+  vector[N_anios_dengue + Nyears_predict]  beta_anio_dengue_predict;
 
   //Simulate beta for years
   for (yr in 1:(N_anios_dengue + Nyears_predict)){
@@ -365,7 +367,7 @@ generated quantities {
       beta_anio_dengue_predict[yr] = beta_anio_dengue[yr];
     //Si ya me pasé, simulo el nuevo año
     } else {
-      beta_anio_dengue_predict[yr] = normal_rng(beta_anio_dengue_predict[yr - 1], sigma_anio_dengue);
+      beta_anio_dengue_predict[yr] = normal_rng(mu_beta_anio_dengue, sigma_anio_dengue);
     }
   }
   

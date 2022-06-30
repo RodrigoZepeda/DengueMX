@@ -1,9 +1,9 @@
 #Bayesian model
 rm(list = ls())
 pacman::p_load(clusterGeneration, tidyverse, cmdstanr, bayestestR, lubridate, 
-               posterior, ggtext, glue)
+               posterior, ggtext, glue, ggrepel)
 
-N_dengue_predict <- 52 #Weeks to predict from now
+N_dengue_predict <- 52*2 #Weeks to predict from now
 
 #------------------------------------------------------------
 #CLIMA
@@ -199,7 +199,8 @@ predplot <- ggplot(prediction) +
     y = "Casos probables",
     title = glue::glue("<span style = 'color:#92AF75;'>**Casos probables de dengue**</span> ",
                        "en México por fecha de inicio de síntomas"),
-    caption = glue::glue("Elaborada el {today()}.<br>**Fuente:** Datos Abiertos de la Secretaría de Salud 2020-{year(today())} y ",
+    caption = glue::glue("Elaborada el {today()}.<br>**Fuente:** Datos Abiertos de la", 
+                         "Secretaría de Salud 2020-{year(today())} y ",
                          "Panoramas Epidemiológicos de Dengue 2017-2019."),
     subtitle = glue::glue("Modelo bayesiano de series de tiempo | **Github:** RodrigoZepeda/DengueMX")
   ) +
@@ -215,7 +216,7 @@ predplot <- ggplot(prediction) +
                      values = c("Observado" = "#92AF75", "Predicho" = "#12757E")) +
   scale_linetype_manual("Incidencia semanal:", 
                         values = c("Observado" = "solid", "Predicho" = "dashed")) +
-  geom_label(aes(x = mediana, y = 20000, 
+  geom_label_repel(aes(x = mediana, y = 20000, 
                  label = glue("Fecha del pico: {mediana}\nentre {lower} y {upper}")), 
              data = max_chain, size = 2)
 ggsave("images/Dengue_predict.pdf", predplot, width = 8, height = 5)
