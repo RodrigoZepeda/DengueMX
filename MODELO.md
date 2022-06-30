@@ -9,16 +9,6 @@ La información de 2016 a la fecha fue obtenida de la Secretaría de Salud a tra
 
 + [Datos abiertos de la Secretaría de Salud](https://www.gob.mx/salud/documentos/datos-abiertos-bases-historicas-de-enfermedades-transmitidas-por-vector) (2021 en adelante).
 
-### Precipitación y temperaturas
-
-La información de 1985 a la fecha se obtuvo de la CONAGUA a través de:
-
-+ Reportes mensuales de precipitación y temperatura promedio. 
-
-+ [Datos abiertos de CONAGUA](https://www.gob.mx/salud/documentos/datos-abiertos-bases-historicas-de-enfermedades-transmitidas-por-vector) (hasta 2020).
-
-## Modelo
-
 La incidencia de dengue se agrega de manera semanal por semana epidemiológica en una base similar a esta: 
 
 | Casos | Semana | Año |
@@ -28,6 +18,16 @@ La incidencia de dengue se agrega de manera semanal por semana epidemiológica e
 |$d_3$  |    3   |  13  |
 | ...   | ...    | ... |
 |$d_{N_d}$  |    44   |  17  |
+
+en el caso del modelo es la variable `nraw` dentro de `datos-limpios/dengue_for_model_mx.csv`. 
+
+### Precipitación y temperaturas
+
+La información de 1985 a la fecha se obtuvo de la CONAGUA a través de:
+
++ Reportes mensuales de precipitación y temperatura promedio. 
+
++ [Datos abiertos de CONAGUA](https://www.gob.mx/salud/documentos/datos-abiertos-bases-historicas-de-enfermedades-transmitidas-por-vector) (hasta 2020).
 
 Las variables climatológicas (_ej_ precipitación y temperatura) están agrupadas por mes y se presentan de la siguiente manera:
 
@@ -40,6 +40,14 @@ Las variables climatológicas (_ej_ precipitación y temperatura) están agrupad
 |$c^1_{N_c}$ |$c^2_{N_c}$ |    44   |  15  |
 
 en general se asume que existen $M$ variables climatológicas distintas.  
+
+## Modelo
+
+Brevemente el modelo sigue la siguiente estructura:
+$$\textrm{Dengue} = \textrm{Clima} + \textrm{Dengue semanas pasadas} + \textrm{Semana} + \textrm{Año}$$
+
+Para ello se realiza primero un modelo de _Clima_ y después los factores que se obtienen de dicho modelo se utilizan para el de _Dengue_. 
+
 
 ### Modelo de clima 
 
