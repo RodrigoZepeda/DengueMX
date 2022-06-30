@@ -49,7 +49,7 @@ con $c_j^{\textrm{std}} = \Big( (c_j^1 - \bar{c}^1)/\text{sd}(c^1), (c_j^2 - \ba
 
 La media $\mu_j = (\mu_j^1,\mu_j^2,\dots, \mu_j^M)^T$ al tiempo $j$ está dada por una dependencia anual y una mensual:
 $$\mu_j^k = \beta_{\text{Año} (j)}^k + \beta_{\text{Mes} (j)}^k$$
-para $k = 1,2\dots, M$.
+para $k = 1,2\dots, M$. aaaaaaa
 
 Las variables de año y mes siguen estructuras jerárquicas:
 $$\beta_{\text{Año} (j)}^k  \sim \text{Normal}(\eta_{\text{Año}},\sigma^2_{\beta_\text{Año}}) \quad \text{y} \quad \beta_{\text{Mes} (j)}^k  \sim \text{Normal}(\eta_{\text{Mes}},\sigma^2_{\beta_\text{Mes}})$$
