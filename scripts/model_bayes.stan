@@ -180,7 +180,7 @@ parameters {
   real<lower=0> sigma_sq;
   real<lower=0> sigma_semana_dengue;
   real<lower=0> sigma_anio_dengue;
-  
+  real<lower=0> sigma_dengue_clima;
   real<lower=0> sigma_AR;
   real<lower=0> phi_dengue;
   
@@ -342,12 +342,12 @@ model {
   sigma_sq            ~ cauchy(0, 2.5);
   sigma_semana_dengue ~ cauchy(0, sigma_sq);
   sigma_anio_dengue   ~ cauchy(0, sigma_sq);
-  
+  sigma_dengue_clima  ~ cauchy(0, 2.5);
   sigma_AR            ~ cauchy(0, 2.5);
   phi_dengue          ~ cauchy(0, 2.5);
   
-  beta_dengue_AR      ~ cauchy(0.0, sigma_AR);
-  
+  beta_dengue_AR      ~ normal(0.0, sigma_AR);
+  beta_dengue_clima   ~ normal(0.0, sigma_dengue_clima);
   error_dengue        ~ normal(0.0, phi_dengue);
 }
 
