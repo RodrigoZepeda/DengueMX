@@ -197,7 +197,7 @@ predplot <- ggplot(prediction) +
   labs(
     x = "",
     y = "Casos probables",
-    title = glue::glue("<span style = 'color:#92AF75;'>Casos probables de dengue</span> ",
+    title = glue::glue("<span style = 'color:#92AF75;'>**Casos probables de dengue**</span> ",
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}.<br>**Fuente:** Datos Abiertos de la Secretaría de Salud 2020-{year(today())} y ",
                          "Panoramas Epidemiológicos de Dengue 2017-2019."),
