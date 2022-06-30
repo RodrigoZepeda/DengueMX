@@ -57,19 +57,19 @@ donde los hiperparámetros siguen una estructura dinámica dependiendo del mes/a
 $$\eta_{\text{Año}} \sim \text{Normal}(\eta_{\text{Año} - 1},\sigma^2_{\eta_\text{Año}}) \quad \text{y} \quad \eta_{\text{Mes}} \sim \text{Normal}(\eta_{\text{Mes} - 1},\sigma^2_{\eta_\text{Mes}}).$$
 
 Por otro lado la variable $\Sigma = S\Omega S$ con $S$ una matriz diagonal dada por 
-$$S = \begin{pmatrix}
-\tau_1 & 0 & \dots & 0\\
-0 & \tau_2 & \dots & 0\\
-0 & 0 & \dots & \tau_M \\
-\end{pmatrix}$$
-con $\tau_j \sim \text{HalfCauchy}(0,2.5)$ y $\Omega  \sim \text{LKJCorr}(\eta)$. 
+$$S = \text{diag}(\tau_1, \tau_2, \dots, \tau_M)$$
+con $\tau_j \sim \text{HalfCauchy}(0,2.5)$ y $\Omega \sim \text{LKJCorr}(\eta)$. 
 
 Las varianzas siguen distribuciones Cauchy positivas:
-$$\sigma^2_{\beta_\text{Año}} \sim \text{HalfCauchy}(0,2.5),\\\\
-\sigma^2_{\beta_\text{Mes}} \sim \text{HalfCauchy}(0,2.5),\\\\
-\sigma^2_{\eta_\text{Año}} \sim \text{HalfCauchy}(0,\sigma^2_{\eta}),\\\\
-\sigma^2_{\eta_\text{Mes}} \sim \text{HalfCauchy}(0,\sigma^2_{\eta}),\\\\
-\sigma^2_{\eta}  \sim \text{HalfCauchy}(0,2.5).$$
+$$\sigma^2_{\beta_\text{Año}} \sim \text{HalfCauchy}(0,2.5)$$
+
+$$\sigma^2_{\beta_\text{Mes}} \sim \text{HalfCauchy}(0,2.5)$$
+
+$$\sigma^2_{\eta_\text{Año}} \sim \text{HalfCauchy}(0,\sigma^2_{\eta})$$
+
+$$\sigma^2_{\eta_\text{Mes}} \sim \text{HalfCauchy}(0,\sigma^2_{\eta})$$
+
+$$\sigma^2_{\eta}  \sim \text{HalfCauchy}(0,2.5).$$
 
 ### Modelo de dengue
 
@@ -86,4 +86,4 @@ $$\sigma^2_{AR}\sim\text{HalfCauchy}(0, \sigma^2) \quad \text{y} \quad \sigma^2_
 Las variables anuales y semanales tienen una estructura jerárquica dada por:
 $$\alpha_{\text{Año}} \sim \text{Normal}(\alpha_{\text{Año} - 1},\sigma^2_{\alpha_\text{Año}}) \text{ y } \alpha_{\text{Semana}} \sim \text{Normal}(\alpha_{\text{Semana} - 1},\sigma^2_{\alpha_\text{Semana}}).$$
 
-donde $\sigma^2_{\alpha_\text{Semana}},\sigma^2_{\alpha_\text{Semana}}\sim\text{HalfCauchy}(0, \sigma^2)$ y $\sigma^2\sim\text{HalfCauchy}(0, 2.5)$. 
+donde $\sigma^2_{\alpha_\text{Semana}},\sigma^2_{\alpha_{\text{Semana}}}\sim\text{HalfCauchy}(0, \sigma^2)$ y $\sigma^2\sim\text{HalfCauchy}(0, 2.5)$. 
