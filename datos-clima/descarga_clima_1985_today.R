@@ -87,6 +87,9 @@ db2021 <- foreach (year = 2021:year(today() - days(35)), .combine = bind_rows) %
     #Descarga de reportes en pdf
     fname        <- glue("{dir_name}/pdf_reports/{var}_{year}.pdf")
     savename     <- glue("{dir_name}/pdf_reports/{var}_{year}.csv")
+    
+    #CONAGUA'S certificate is not working
+    options(download.file.method="curl", download.file.extra="-k -L")
     download.file(url_file, fname, quiet = T)
     
     #Lectura con Python del excel
