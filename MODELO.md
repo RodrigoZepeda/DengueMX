@@ -65,13 +65,11 @@ $$S = \begin{pmatrix}
 con $\tau_j \sim \text{HalfCauchy}(0,2.5)$ y $\Omega  \sim \text{LKJCorr}(\eta)$. 
 
 Las varianzas siguen distribuciones Cauchy positivas:
-$$\begin{aligned}
-\sigma^2_{\beta_\text{Año}} & \sim \text{HalfCauchy}(0,2.5),\\
-\sigma^2_{\beta_\text{Mes}} & \sim \text{HalfCauchy}(0,2.5),\\
-\sigma^2_{\eta_\text{Año}} & \sim \text{HalfCauchy}(0,\sigma^2_{\eta}),\\
-\sigma^2_{\eta_\text{Mes}} & \sim \text{HalfCauchy}(0,\sigma^2_{\eta}),\\
-\sigma^2_{\eta} & \sim \text{HalfCauchy}(0,2.5).
-\end{aligned}$$
+$$\sigma^2_{\beta_\text{Año}} \sim \text{HalfCauchy}(0,2.5),\\\\
+\sigma^2_{\beta_\text{Mes}} \sim \text{HalfCauchy}(0,2.5),\\\\
+\sigma^2_{\eta_\text{Año}} \sim \text{HalfCauchy}(0,\sigma^2_{\eta}),\\\\
+\sigma^2_{\eta_\text{Mes}} \sim \text{HalfCauchy}(0,\sigma^2_{\eta}),\\\\
+\sigma^2_{\eta}  \sim \text{HalfCauchy}(0,2.5).$$
 
 ### Modelo de dengue
 
@@ -80,12 +78,12 @@ El modelo de dengue integra los factores mensuales del modelo de clima _i.e._ lo
 $$g(d_i) \sim \textrm{Normal}(m_i, \phi)$$
 
 con $\phi \sim\text{HalfCauchy}(0, 2.5)$ y $m_i$ dada por:
-$$m_i = \underbrace{\alpha_{\text{Año} (i)} + \alpha_{\text{Semana} (i)}}_{\text{Estacional}} + \underbrace{\sum_{k=1}^M \alpha^k_{\text{Clima}} \cdot \beta^k_{\text{Mes} (i)}}_{\text{Climático}} + \underbrace{\sum_{p=1}^R \alpha^p_{\text{AR}} \cdot g(d_{i-p})}_{\text{Autorregresivo}}$$
+$$m_i = \alpha_{\text{Año} (i)} + \alpha_{\text{Semana} (i)} + \sum_{k=1}^M \alpha^k_{\text{Clima}} \cdot \beta^k_{\text{Mes} (i)} + \sum_{p=1}^R \alpha^p_{\text{AR}} \cdot g(d_{i-p})$$
 
 donde $\alpha^p_{\text{AR}} \sim \text{Normal}(0, \sigma^2_{AR})$ y $\alpha^k_{\text{Clima}} \sim \text{Normal}(0, \sigma^2_{\text{Clima}})$ con las _a priori_ dadas por:
 $$\sigma^2_{AR}\sim\text{HalfCauchy}(0, \sigma^2) \quad \text{y} \quad \sigma^2_{Clima}\sim\text{HalfCauchy}(0, \sigma^2).$$
 
 Las variables anuales y semanales tienen una estructura jerárquica dada por:
-$$\alpha_{\text{Año}} \sim \text{Normal}(\alpha_{\text{Año} - 1},\sigma^2_{\alpha_\text{Año}}) \quad \text{y} \quad \alpha_{\text{Semana}} \sim \text{Normal}(\alpha_{\text{Semana} - 1},\sigma^2_{\alpha_\text{Semana}}).$$
+$$\alpha_{\text{Año}} \sim \text{Normal}(\alpha_{\text{Año} - 1},\sigma^2_{\alpha_\text{Año}}) \text{ y } \alpha_{\text{Semana}} \sim \text{Normal}(\alpha_{\text{Semana} - 1},\sigma^2_{\alpha_\text{Semana}}).$$
 
 donde $\sigma^2_{\alpha_\text{Semana}},\sigma^2_{\alpha_\text{Semana}}\sim\text{HalfCauchy}(0, \sigma^2)$ y $\sigma^2\sim\text{HalfCauchy}(0, 2.5)$. 
