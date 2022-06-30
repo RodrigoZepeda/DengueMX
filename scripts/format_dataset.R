@@ -227,7 +227,7 @@ dengue_all <- dengue_all %>%
 dengue_all %>% write_excel_csv("datos-limpios/dengue_for_model_mx.csv")
 
 #Create plot
-dengue_all_plot %>%
+dengall <- dengue_all_plot %>%
   group_by(fecha) %>%
   summarise(n = sum(n)) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>%
@@ -240,7 +240,7 @@ dengue_all_plot %>%
                        "en México por fecha de inicio de síntomas"),
     caption = glue::glue("Elaborada el {today()}"),
     subtitle = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud y ",
-                          "Panoramas Epidemiológicos de Dengue 2017-2019")
+                          "Panoramas Epidemiológicos de Dengue 2016-2019")
   ) +
   theme_minimal() +
   scale_y_continuous(labels = scales::comma) +
@@ -252,13 +252,13 @@ dengue_all_plot %>%
         plot.background  = element_rect(fill = "#FBFFFB"),
         plot.subtitle = element_text(size = 8, face = "italic", color = "gray25")) +
   coord_cartesian(xlim = c(ymd("2015/03/01"), today()))
-ggsave("images/Dengue.pdf", width = 8, height = 4)
-ggsave("images/Dengue.png", width = 8, height = 4, dpi = 750, bg = "white")
+ggsave("images/Dengue.pdf", dengall, width = 8, height = 4)
+ggsave("images/Dengue.png", dengall, width = 8, height = 4, dpi = 750, bg = "white")
 
 #Create plot by state
 set.seed(236857)
-colors <- colorRampPalette(c("#92AF75","#12757E"))(32)
-dengue_all_plot %>%
+colors  <- colorRampPalette(c("#92AF75","#12757E"))(32)
+dengall <- dengue_all_plot %>%
   ungroup() %>%
   arrange(fecha, Estado) %>%
   group_by(Estado) %>%
@@ -275,11 +275,11 @@ dengue_all_plot %>%
     y = "",
     title = glue::glue("<br><span style = 'color:#12757E;'>Dengue</span> ",
                        ""),
-    caption = glue::glue("Fuente: Datos Abiertos de la Secretaría de Salud (2020-{year(today())}) y ",
-                         "Panoramas Epidemiológicos de Dengue 2017-2019. Elaborada el {today()}"),
+    caption = glue::glue("**Fuente:** Datos Abiertos de la Secretaría de Salud (2020-{year(today())}) y ",
+                         "Panoramas Epidemiológicos de Dengue 2016-2019. Elaborada el {today()}<br>
+                         **Github:** RodrigoZepeda/DengueMX"),
     subtitle = glue::glue("<span style = 'color:#92AF75;'>Casos probables por fecha de inicio de síntomas</span>")
   ) +
-  theme_minimal() +
   scale_y_continuous(labels = scales::comma) +
   scale_x_date(date_minor_breaks = "6 months", date_breaks = "1 year",
                date_labels = "%Y", expand = c(0, 0)) +
@@ -288,15 +288,16 @@ dengue_all_plot %>%
         plot.subtitle    = element_markdown(size = 20, color = "gray25", family = "Helvetica",
                                             face = "italic"),
         panel.spacing    = unit(1, "lines"),
+        plot.caption     = element_markdown(),
         panel.grid       = element_blank(),
         panel.background = element_rect(fill = "#FBFFFB"),
         plot.background  = element_rect(fill = "#FBFFFB"),
         axis.title.y     = element_markdown(color = "black"),
         axis.text        = element_text(color = "black"),
         legend.position  = "none",
-        panel.border     = element_rect(color = "black", fill = NA, size = 1)) +
+        panel.border     = element_blank()) +
   coord_cartesian(xlim = c(ymd("2015/03/01"), today())) +
   scale_fill_manual(values = sample(colors))
-ggsave("images/Dengue_estado.pdf", width = 10, height = 14)
-ggsave("images/Dengue_estado.png", width = 10, height = 14, dpi = 750)
+ggsave("images/Dengue_estado.pdf", dengall, width = 10, height = 14)
+ggsave("images/Dengue_estado.png", dengall, width = 10, height = 14, dpi = 750)
 
