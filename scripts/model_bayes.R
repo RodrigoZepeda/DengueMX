@@ -1,21 +1,28 @@
 #Bayesian model
 rm(list = ls())
-pacman::p_load(clusterGeneration, tidyverse, cmdstanr, bayestestR, lubridate, posterior, ggtext, glue)
+pacman::p_load(clusterGeneration, tidyverse, cmdstanr, bayestestR, lubridate, 
+               posterior, ggtext, glue)
 
-dengue_data <- read_csv("datos-limpios/dengue_for_model_mx.csv")  
+N_dengue_predict <- 52 #Weeks to predict from now
 
+#------------------------------------------------------------
+#CLIMA
+#------------------------------------------------------------
+
+#Archivos con la info de precipitación y temperatura
 clima_data  <- read_rds("datos-clima/processed/Clima_info.rds") %>%
   mutate(MES_NUM = as.numeric(MES_NUM)) %>%
+  filter(ANIO >= 2010) %>%
   select(-ANUAL, -FECHA_PROXY, -MES) %>%
   filter(ENTIDAD == "NACIONAL") %>%
   select(-ENTIDAD) %>%
   pivot_wider(id_cols = c(ANIO, MES_NUM), names_from = VARIABLE, values_from = VALOR) %>%
   arrange(ANIO, MES_NUM) %>%
   filter(!is.nan(Precipitacion)) %>%
-  #FIXME THIS IS ONLY TO MAKE MODEL RUN FASTER FOR EXPERIMENTS
-  filter(ANIO >= 2010) %>%
-  select(-Temperatura_Maxima, -Temperatura_Promedio)
+  mutate(Precipitacion = sqrt(Precipitacion)) %>%
+  select(-starts_with("Temperatura"))
 
+#Colocamos en el formato para saber asignar mes/día de temp
 clima_vars <- clima_data %>%
   select(-ANIO, -MES_NUM) %>%
   as.matrix
@@ -24,6 +31,13 @@ anio_mes <- clima_data %>%
   select(ANIO, MES_NUM) %>%
   mutate(ANIO = ANIO - (min(ANIO) - 1)) %>%
   as.matrix
+
+#------------------------------------------------------------
+#DENGUE
+#------------------------------------------------------------
+
+#Archivo con la información de dengue la variable importante es nraw = casos de dengue reportados 
+dengue_data               <- read_csv("datos-limpios/dengue_for_model_mx.csv")  
 
 #Check pacf(dengue_data$log_nraw) for AR(p)
 max_autocorrelation_order <- 5
@@ -34,16 +48,48 @@ dengue_data <- dengue_data %>%
   mutate(epiweek = epiweek(fecha)) %>%
   filter(year > 2015) %>%
   mutate(month   = month(fecha)) %>%
-  mutate(normalized_year = year - min(year) + 1)
+  mutate(normalized_year = year - min(year) + 1) %>%
+  filter(fecha < max(fecha)) #Drop last observation is always lower
 
-ano_mes_semana_dengue <- dengue_data %>%
+anio_mes_semana_dengue <- dengue_data %>%
   select(year, month, epiweek) %>%
   mutate(year = year - !!min(clima_data$ANIO) + 1) %>%
   as.matrix
 
-options(mc.cores = parallel::detectCores())
+#Generate prediction matrix for model 
+anio_mes_semana_dengue_predict <- dengue_data %>%
+  select(fecha, year, month, epiweek)
 
-chains = 1; iter_warmup = 100; nsim = 200; pchains = 1; 
+fecha_baseline <- max(anio_mes_semana_dengue_predict$fecha)
+
+for (n in 1:N_dengue_predict){
+  anio_mes_semana_dengue_predict <- anio_mes_semana_dengue_predict %>%
+    bind_rows(
+      tibble(fecha     = fecha_baseline + weeks(n)) %>%
+        mutate(year    = year(fecha)) %>%
+        mutate(month   = month(fecha)) %>%
+        mutate(epiweek = epiweek(fecha))
+    )
+}
+
+anio_mes_semana_dengue_predict_stan <- anio_mes_semana_dengue_predict %>%
+  select(year, month, epiweek) %>%
+  mutate(year = year - !!min(clima_data$ANIO) + 1) %>%
+  as.matrix
+
+#------------------------------------------------------------
+#MODELO
+#------------------------------------------------------------
+
+options(mc.cores = parallel::detectCores())
+chains = 4; iter_warmup = 250; nsim = 500; pchains = 4; 
+cpp_options  <- list(stan_threads = TRUE)
+
+
+#Normalizamos la variable de dengue
+mean_d <- mean(sqrt(dengue_data$nraw))
+sd_d   <- sd(sqrt(dengue_data$nraw))
+
 datos  <- list(
   #Variables de clima
   N_clima         = nrow(clima_data),
@@ -57,14 +103,19 @@ datos  <- list(
   N_dengue               = nrow(dengue_data),
   N_anios_dengue         = length(unique(dengue_data$year)),
   N_semanas_dengue       = length(unique(dengue_data$epiweek)),
-  dengue                 = dengue_data$log_nraw,
-  anio_mes_semana_dengue = ano_mes_semana_dengue,
+  dengue                 = (sqrt(dengue_data$nraw) - mean_d)/sd_d,
+  anio_mes_semana_dengue = anio_mes_semana_dengue,
   
   #Hiperparámetros
-  max_autorregresive_order_dengue = 5
+  max_autorregresive_order_dengue = 5,
+  
+  #Predicción
+  N_dengue_predict = N_dengue_predict,
+  anio_mes_semana_dengue_predict = anio_mes_semana_dengue_predict_stan
+  
 ) 
 
-# function form 2 with an argument named `chain_id`
+#Valores iniciales 
 initf2 <- function(chain_id = 1) {
   list(tau_clima                   = abs(rnorm(datos$N_vars)),
        Omega_clima                 = rcorrmatrix(datos$N_vars),
@@ -78,11 +129,7 @@ initf2 <- function(chain_id = 1) {
   )
 }
 
-
-# generate a list of lists to specify initial values
 init_ll      <- lapply(1:chains, function(id) initf2(chain_id = id))
-
-cpp_options  <- list(stan_threads = TRUE)
 
 dengue_model <- cmdstan_model("scripts/model_bayes.stan", cpp_options = cpp_options)
 
@@ -97,17 +144,54 @@ model_sample <- dengue_model$sample(data = datos, chains = chains,
                                   output_dir = "cmdstan",                                  
                                   threads_per_chain = 4)
 
-#Get each chain simulation to check when does the maximum per year occur and give a CI
-los_cases       <- model_sample$summary("mu_dengue", ~ exp(log(100)*quantile(.x, probs = c(0.0, 0.025, 0.5, 0.95, 0.975)))) %>%
-  mutate(weeknum = as.numeric(str_remove_all(variable, "mu_dengue\\[|\\]"))) %>%
-  left_join(
-    dengue_data %>% mutate(weeknum = 1:n())
-  )
+#------------------------------------------------------------
+#GRÁFICO
+#------------------------------------------------------------
 
-ggplot(los_cases, aes(x = weeks(weeknum - 1) + min(!!dengue_data$fecha))) +
-  geom_point(aes(y = nraw), color = "black") +
-  geom_ribbon(aes(ymin = `2.5%`, ymax = `97.5%`), alpha = 0.1, fill = "#12757E") +
-  geom_line(aes(y = `50%`), color = "#12757E") +
+#Chequeo de fecha posible del pico
+transformed_cases <- model_sample$draws("mu_dengue_predict") %>% 
+  as_draws_df() %>% 
+  select(-starts_with(".")) %>% 
+  t() %>%
+  bind_cols(anio_mes_semana_dengue_predict)
+
+#Obtenemos la fecha del pico de cada uno de los años
+max_chain <- transformed_cases %>% 
+  pivot_longer(cols = starts_with("...")) %>%
+  group_by(year, name) %>%
+  slice(which.max(value)) %>%
+  ungroup() %>%
+  select(-name) %>%
+  group_by(year) %>%
+  summarise(mediana = median(fecha),
+            lower   = quantile(fecha, 0.1, type = 1),
+            upper   = quantile(fecha, 0.9, type = 1)) 
+
+#Nos quedamos sólo con los picos futuros
+max_chain <- max_chain %>%
+  filter(year < max(year) & year >= max(dengue_data$year)) 
+
+#Obtenemos los resultados del modelo
+modelo_ajustado <- summarise_draws(model_sample$draws("dengue_predict"), 
+                                   ~ quantile( ((.*sd_d) + mean_d)^2, probs = c(0.005, 0.025, 0.05, 0.1,
+                                                           0.125, 0.25, 0.325,0.4, 0.5,
+                                                           0.6, 0.675,0.75, 0.875, 0.9, 0.95, 
+                                                           0.975, 0.995)))
+prediction <- modelo_ajustado %>% 
+  bind_cols(anio_mes_semana_dengue_predict) %>%
+  left_join(dengue_data)
+
+predplot <- ggplot(prediction) +
+  geom_vline(aes(xintercept = mediana), data = max_chain, linetype = "dotted") +
+  geom_ribbon(aes(x = fecha, ymin = `2.5%`, ymax = `97.5%`), alpha = 0.1,
+              fill = "#12757E") +
+  geom_ribbon(aes(x = fecha, ymin = `10%`, ymax = `90%`), alpha = 0.15,
+              fill = "#12757E") +
+  geom_line(aes(x = fecha, y =  `50%`, color = "Predicho",
+                linetype = "Predicho"), alpha = 0.5) +
+  geom_point(aes(color = "Observado", linetype = "Observado",
+                 x = fecha, y = nraw), alpha = 0.5) +
+  #geom_line(aes(color = "red", size = color, y = model2)) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   theme_minimal() +
   labs(
@@ -115,11 +199,24 @@ ggplot(los_cases, aes(x = weeks(weeknum - 1) + min(!!dengue_data$fecha))) +
     y = "Casos probables",
     title = glue::glue("<span style = 'color:#92AF75;'>Casos probables de dengue</span> ",
                        "en México por fecha de inicio de síntomas"),
-    caption = glue::glue("Elaborada el {today()}.\nFuente: Datos Abiertos de la Secretaría de Salud 2020-{year(today())} y ",
+    caption = glue::glue("Elaborada el {today()}.<br>**Fuente:** Datos Abiertos de la Secretaría de Salud 2020-{year(today())} y ",
                          "Panoramas Epidemiológicos de Dengue 2017-2019."),
-    subtitle = glue::glue("Modelo bayesiano de series de tiempo | Github: RodrigoZepeda/DengueMX")
-  ) 
-ggsave("images/Dengue_predict.pdf", width = 8, height = 5)
-ggsave("images/Dengue_predict.png", width = 8, height = 5, dpi = 750, bg = "white")
-
-
+    subtitle = glue::glue("Modelo bayesiano de series de tiempo | **Github:** RodrigoZepeda/DengueMX")
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_markdown(),
+        plot.caption = element_markdown(),
+        legend.position = "bottom",
+        panel.background = element_rect(fill = "#FBFFFB"),
+        plot.background  = element_rect(fill = "#FBFFFB"),
+        plot.subtitle    = element_markdown(size = 8, face = "italic", color = "gray25")) +
+  scale_color_manual("Incidencia semanal:", 
+                     values = c("Observado" = "#92AF75", "Predicho" = "#12757E")) +
+  scale_linetype_manual("Incidencia semanal:", 
+                        values = c("Observado" = "solid", "Predicho" = "dashed")) +
+  geom_label(aes(x = mediana, y = 20000, 
+                 label = glue("Fecha del pico: {mediana}\nentre {lower} y {upper}")), 
+             data = max_chain, size = 2)
+ggsave("images/Dengue_predict.pdf", predplot, width = 8, height = 5)
+ggsave("images/Dengue_predict.png", predplot, width = 8, height = 5, dpi = 750, bg = "white")
