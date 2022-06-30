@@ -49,7 +49,7 @@ con $c_j^{\textrm{std}} = \Big( (c_j^1 - \bar{c}^1)/\text{sd}(c^1), (c_j^2 - \ba
 
 La media $\mu_j = (\mu_j^1,\mu_j^2,\dots, \mu_j^M)^T$ al tiempo $j$ está dada por una dependencia anual y una mensual:
 $$\mu_j^k = \beta_{\text{Año} (j)}^k + \beta_{\text{Mes} (j)}^k$$
-para $k = 1,2\dots, M$. aaaaaaa
+para $k = 1,2\dots, M$.
 
 Las variables de año y mes siguen estructuras jerárquicas:
 $$\beta_{\text{Año} (j)}^k  \sim \text{Normal}(\eta_{\text{Año}},\sigma^2_{\beta_\text{Año}}) \quad \text{y} \quad \beta_{\text{Mes} (j)}^k  \sim \text{Normal}(\eta_{\text{Mes}},\sigma^2_{\beta_\text{Mes}})$$
@@ -58,7 +58,8 @@ $$\eta_{\text{Año}} \sim \text{Normal}(\eta_{\text{Año} - 1},\sigma^2_{\eta_\t
 
 Por otro lado la variable $\Sigma = S\Omega S$ con $S$ una matriz diagonal dada por 
 $$S = \text{diag}(\tau_1, \tau_2, \dots, \tau_M)$$
-con $\tau_j \sim \text{HalfCauchy}(0,2.5)$ y $\Omega \sim \text{LKJCorr}(\eta)$. 
+con 
+$$\tau_j \sim \text{HalfCauchy}(0,2.5) \text{ y } \Omega \sim \text{LKJCorr}(\eta).$$ 
 
 Las varianzas siguen distribuciones Cauchy positivas:
 $$\sigma^2_{\beta_\text{Año}} \sim \text{HalfCauchy}(0,2.5)$$
