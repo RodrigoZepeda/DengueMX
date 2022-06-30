@@ -5,9 +5,7 @@
 Repositorio de los datos abiertos y scrappeados de dengue en México junto con modelo de predicción de casos.
 
 Brevemente el modelo sigue la siguiente estructura:
-$$
-\textrm{Dengue} = \textrm{Clima} + \textrm{Dengue semanas pasadas} + \textrm{Semana} + \textrm{Año}
-$$
+$$\textrm{Dengue} = \textrm{Clima} + \textrm{Dengue semanas pasadas} + \textrm{Semana} + \textrm{Año}$$
 
 una explicación más técnica del modelo la puedes encontrar en [`MODELO.md`](MODELO.md).
 
