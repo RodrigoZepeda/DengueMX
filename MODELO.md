@@ -11,13 +11,15 @@ La información de 2016 a la fecha fue obtenida de la Secretaría de Salud a tra
 
 La incidencia de dengue se agrega de manera semanal por semana epidemiológica en una base similar a esta: 
 
-| Casos | Semana | Año |
+---
+| Casos (`nraw`) | Semana Epidemiológica (`epiweek`) | Año Epidemiológico (`year`) |
 |-------|--------|-----|
 |$d_1$  |    1   |  13  |
 |$d_2$  |    2   |  13  |
 |$d_3$  |    3   |  13  |
 | ...   | ...    | ... |
 |$d_{N_d}$  |    44   |  17  |
+---
 
 en el caso del modelo es la variable `nraw` dentro de `datos-limpios/dengue_for_model_mx.csv`. 
 
@@ -31,13 +33,15 @@ La información de 1985 a la fecha se obtuvo de la CONAGUA a través de:
 
 Las variables climatológicas (_ej_ precipitación y temperatura) están agrupadas por mes y se presentan de la siguiente manera:
 
-|Temperatura | Precipitación | Mes | Año |
+---
+|Temperatura | Precipitación (`Precipitacion`) | Mes (`MES_NUM`) | Año Epidemiológico (`ANIO`) |
 |-------|-------|--------|-----|
 |$c^1_1$ |$c^2_1$ |    1   |  1  |
 |$c^1_2$ |$c^2_2$ |    2   |  1  |
 |$c^1_3$ |$c^2_3$ |    3   |  1  |
 | ...    |  ...   |  ...   | ... |
 |$c^1_{N_c}$ |$c^2_{N_c}$ |    44   |  15  |
+---
 
 en general se asume que existen $M$ variables climatológicas distintas.  
 
