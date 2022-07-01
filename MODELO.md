@@ -94,7 +94,8 @@ $$\alpha^p_{\text{AR}} \sim \text{Normal}(0, \sigma^2_{AR}) \text{ y } \alpha^k_
 con las _a priori_ dadas por:
 $$\sigma^2_{AR}\sim\text{HalfCauchy}(0, \sigma^2) \quad \text{y} \quad \sigma^2_{Clima}\sim\text{HalfCauchy}(0, \sigma^2).$$
 
-Las variables anuales y semanales tienen una estructura jerárquica dada por:
-$$\alpha_{\text{Año}} \sim \text{Normal}(\alpha_{\text{Año} - 1},\sigma^2_{\alpha_\text{Año}}) \text{ y } \alpha_{\text{Semana}} \sim \text{Normal}(\alpha_{\text{Semana} - 1},\sigma^2_{\alpha_\text{Semana}}).$$
+Las variables anuales tienen una media compartida $$\alpha_{\text{Año}} \sim \text{Normal}(\theta_{\alpha_\text{Año}},\sigma^2_{\alpha_\text{Año}})$$
 
-donde $$\sigma^2_{\alpha_\text{Semana}},\sigma^2_{\alpha_{\text{Semana}}}\sim\text{HalfCauchy}(0, \sigma^2) \text{ y  }\sigma^2\sim\text{HalfCauchy}(0, 2.5).$$ 
+mientras que las semanales tienen una estructura dinámica dada por: $$\text{Normal}(\alpha_{\text{Semana} - 1},\sigma^2_{\alpha_\text{Semana}}).$$
+
+donde $$\sigma^2_{\alpha_\text{Año}},\sigma^2_{\alpha_{\text{Semana}}}\sim\text{HalfCauchy}(0, \sigma^2) \text{ y  }\sigma^2\sim\text{HalfCauchy}(0, 2.5).$$ 
