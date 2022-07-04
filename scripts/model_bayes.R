@@ -1,7 +1,9 @@
+#!/usr/bin/env Rscript
+
 #Bayesian model
 rm(list = ls())
-pacman::p_load(clusterGeneration, tidyverse, cmdstanr, bayestestR, lubridate, 
-               posterior, ggtext, glue, ggrepel)
+pacman::p_load(clusterGeneration, cmdstanr, bayestestR, lubridate, 
+               posterior, ggtext, glue, ggrepel, tidyverse)
 
 N_dengue_predict <- 52*2 #Weeks to predict from now
 
@@ -82,9 +84,13 @@ anio_mes_semana_dengue_predict_stan <- anio_mes_semana_dengue_predict %>%
 #------------------------------------------------------------
 
 options(mc.cores = parallel::detectCores())
-chains = 4; iter_warmup = 250; nsim = 500; pchains = 4; 
+chains = 4; iter_warmup = 1000; nsim = 2000; pchains = 4; 
 cpp_options  <- list(stan_threads = TRUE)
 
+#Chequeo de que haya más warmup que nsim
+if (nsim <= iter_warmup){
+  stop("Nsim: Total de simulaciones debe ser mayor a iteraciones iter_warmup")
+}
 
 #Normalizamos la variable de dengue
 mean_d <- mean(sqrt(dengue_data$nraw))
@@ -107,7 +113,7 @@ datos  <- list(
   anio_mes_semana_dengue = anio_mes_semana_dengue,
   
   #Hiperparámetros
-  max_autorregresive_order_dengue = 5,
+  max_autorregresive_order_dengue = max_autocorrelation_order,
   
   #Predicción
   N_dengue_predict = N_dengue_predict,
@@ -140,7 +146,7 @@ model_sample <- dengue_model$sample(data = datos, chains = chains,
                                   adapt_delta = 0.95, 
                                   iter_sampling = nsim - iter_warmup,
                                   init = init_ll,
-                                  max_treedepth = 2^10,
+                                  max_treedepth = 2^(10),
                                   output_dir = "cmdstan",                                  
                                   threads_per_chain = 4)
 

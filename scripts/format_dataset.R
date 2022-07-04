@@ -145,11 +145,9 @@ dengue_2020_2022 <- dengue %>%
 #   select(-n) %>%
 #   mutate(n = Incidencia)
 
-dengue_pasado  <- read_csv(c("panoramas_epidemiologicos_previos/processed/2016.csv",
-                             "panoramas_epidemiologicos_previos/processed/2017.csv",
-                             "panoramas_epidemiologicos_previos/processed/2018.csv",
-                             "panoramas_epidemiologicos_previos/processed/2019.csv",
-                             "panoramas_epidemiologicos_previos/processed/2020.csv")) %>%
+#Priorizamos dengue datos abiertos > dengue_pasado > dengue_actual
+dengue_pasado  <- read_csv(list.files("panoramas_epidemiologicos_previos/processed/",
+                                      pattern = "[0-9].csv", full.names = TRUE)) %>%
   select(Estado, `Probables (año pasado)`, Semana_Epidemiologica, Anio) %>%
   rename(n = `Probables (año pasado)`) %>%
   mutate(Semana_Epidemiologica = as.numeric(Semana_Epidemiologica)) %>%
@@ -158,13 +156,51 @@ dengue_pasado  <- read_csv(c("panoramas_epidemiologicos_previos/processed/2016.c
   filter(!(Semana_Epidemiologica == 46 & Anio == 2017)) %>%
   filter(!(Semana_Epidemiologica == 49 & Anio == 2019)) %>%
   filter(!(Semana_Epidemiologica == 42 & Anio == 2018)) %>%
+  filter(!(Semana_Epidemiologica == 38 & Anio == 2019)) %>%
   arrange(Anio, Semana_Epidemiologica) %>%
   group_by(Anio, Estado) %>%
   mutate(n = if_else(n < lag(n, default = 0), lag(n, default = 0), n)) %>%
   mutate(Incidencia = n - lag(n, default = 0)) %>%
   mutate(Incidencia = if_else(Incidencia < 0, 0, Incidencia)) %>%
   select(-n) %>%
-  mutate(n = Incidencia)
+  rename(n = Incidencia)
+
+dengue_actual <- read_csv(list.files("panoramas_epidemiologicos_previos/processed/",
+                                      pattern = "[0-9].csv", full.names = TRUE)) %>%
+  select(Estado, `Probables (año actual)`, Semana_Epidemiologica, Anio) %>%
+  rename(n = `Probables (año actual)`) %>%
+  mutate(Semana_Epidemiologica = as.numeric(Semana_Epidemiologica)) %>%
+  filter(!(Semana_Epidemiologica == 50 & Anio == 2016)) %>%
+  filter(!(Semana_Epidemiologica == 46 & Anio == 2018)) %>%
+  filter(!(Semana_Epidemiologica == 49 & Anio == 2020)) %>%
+  filter(!(Semana_Epidemiologica == 42 & Anio == 2019)) %>%
+  filter(!(Semana_Epidemiologica == 38 & Anio == 2019)) %>%
+  arrange(Anio, Semana_Epidemiologica) %>%
+  group_by(Anio, Estado) %>%
+  mutate(n = if_else(n < lag(n, default = 0), lag(n, default = 0), n)) %>%
+  mutate(Incidencia = n - lag(n, default = 0)) %>%
+  mutate(Incidencia = if_else(Incidencia < 0, 0, Incidencia)) %>%
+  select(-n) %>%
+  rename(n = Incidencia)
+
+#Si ya estaba en la de pasado se ignora el actual
+dengue_actual <- dengue_actual %>%
+  left_join(
+    dengue_pasado %>% select(Semana_Epidemiologica, Anio) %>% mutate(indicator = TRUE)
+  ) %>%
+  filter(is.na(indicator)) %>%
+  select(-indicator)
+
+dengue_pasado <- dengue_pasado %>%
+  bind_rows(dengue_actual)
+
+#Si está en la base de abiertos la ignoramos
+dengue_pasado <- dengue_pasado %>%
+  left_join(
+    dengue_2020_2022 %>% select(Semana_Epidemiologica, Anio) %>% mutate(indicator = TRUE)
+  ) %>%
+  filter(is.na(indicator)) %>%
+  select(-indicator)
 
 dengue_all <- dengue_pasado %>%
   bind_rows(dengue_2020_2022) %>%
