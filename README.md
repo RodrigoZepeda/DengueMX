@@ -1,6 +1,6 @@
 # DengueMX
 
-> :warning: Al **4 de julio 2022* la Secretaría de Salud no ha actualizado la base de datos abiertos por lo que 2022 se obtiene de los panoramas epidemiológicos. Espero esta solución sea temporal.
+> :warning: Al **4 de julio 2022** la Secretaría de Salud no ha actualizado la base de datos abiertos por lo que 2022 se obtiene de los panoramas epidemiológicos. Espero esta solución sea temporal.
 
 ![Casos de dengue en México](images/Dengue_predict.png)
 
