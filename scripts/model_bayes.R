@@ -39,8 +39,8 @@ anio_mes <- clima_data %>%
 #Archivo con la información de dengue la variable importante es nraw = casos de dengue reportados 
 dengue_data               <- read_csv("datos-limpios/dengue_for_model_mx.csv")  
 
-#Check pacf(dengue_data$log_nraw) for AR(p)
-max_autocorrelation_order <- 5
+#Check pacf(sqrt(dengue_data$nraw)) for AR(p)
+max_autocorrelation_order <- 6
 
 #Create year, month and week variable
 dengue_data <- dengue_data %>%
@@ -153,11 +153,12 @@ transformed_cases <- model_sample$draws("mu_dengue_predict") %>%
   as_draws_df() %>% 
   select(-starts_with(".")) %>% 
   t() %>%
+  as_tibble() %>%
   bind_cols(anio_mes_semana_dengue_predict)
 
 #Obtenemos la fecha del pico de cada uno de los años
 max_chain <- transformed_cases %>% 
-  pivot_longer(cols = starts_with("...")) %>%
+  pivot_longer(cols = starts_with("V")) %>%
   group_by(year, name) %>%
   slice(which.max(value)) %>%
   ungroup() %>%
