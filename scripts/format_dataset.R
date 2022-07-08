@@ -268,7 +268,7 @@ dengall <- dengue_all_plot %>%
   summarise(n = sum(n)) %>%
   mutate(n = rollmean(n, 7,  fill = 0, align = "right")) %>%
   ggplot() +
-  geom_line(aes(x = fecha, y = n), size = 1, color = "#12757E") +
+  geom_line(aes(x = fecha, y = n), linewidth = 1, color = "#12757E") +
   labs(
     x = "",
     y = "Casos probables",
