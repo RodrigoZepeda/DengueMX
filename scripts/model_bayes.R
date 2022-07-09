@@ -51,7 +51,8 @@ dengue_data <- dengue_data %>%
   filter(year > 2015) %>%
   mutate(month   = month(fecha)) %>%
   mutate(normalized_year = year - min(year) + 1) %>%
-  filter(fecha < max(fecha)) #Drop last observation is always lower
+  filter(fecha < max(fecha)) %>% #Drop last observation is always lower
+  identity()
 
 anio_mes_semana_dengue <- dengue_data %>%
   select(year, month, epiweek) %>%
@@ -147,7 +148,7 @@ model_sample <- dengue_model$sample(data = datos, chains = chains,
                                   iter_sampling = nsim - iter_warmup,
                                   init = init_ll,
                                   max_treedepth = 2^(10),
-                                  output_dir = "cmdstan",                                  
+                                  output_dir = tempdir(),                                  
                                   threads_per_chain = 4)
 
 #------------------------------------------------------------
@@ -206,7 +207,8 @@ predplot <- ggplot(prediction) +
     y = "Casos probables",
     title = glue::glue("<span style = 'color:#92AF75;'>**Casos probables de dengue**</span> ",
                        "en México por fecha de inicio de síntomas"),
-    caption = glue::glue("Elaborada el {today()}.<br>**Fuente:** Datos Abiertos de la", 
+    caption = glue::glue("Elaborada el {today()} con datos hasta el {max(dengue_data$fecha)}<br>
+                         **Fuente:** Datos Abiertos de la", 
                          "Secretaría de Salud 2020-{year(today())} y ",
                          "Panoramas Epidemiológicos de Dengue 2017-2019."),
     subtitle = glue::glue("Modelo bayesiano de series de tiempo | **Github:** RodrigoZepeda/DengueMX")
