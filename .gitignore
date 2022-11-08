@@ -9,6 +9,7 @@ __pycache__/
 cmdstan/*
 scripts/predice_clima
 scripts/model_bayes
+julia/
 
 # History files
 .Rhistory
