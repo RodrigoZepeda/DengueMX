@@ -8,25 +8,41 @@
 //-----------------------------------------------------------------------------
 //
 //El modelo opera sobre las variables normalizadas:
+//
 //          y_clima_std[n, var] = (y_clima[n, var] - mean(y_clima[:,var])) / sd(y_clima[:, var])
+//
 //donde se asume que para cada n:
+//
 //          y_clima_std[n, :] = beta_mes[ mes[n], :] + beta_año[ año[n],:] + error_clima[n,:]
+//
 //donde los términos de error_clima a lo largo de n están correlacionados.
 //Escrito de otra forma el modelo es:
+//
 //          y_clima_std[n, :] ~ NormalMulti(mu_clima[n,:], Sigma_clima)
+//
 //para mu_clima[n,:] = beta_mes[ mes[n], :] + beta_año[ año[n],:].
+//
 //Suponemos una estructura jerárquica en el efecto de meses y_clima años:
+//
 // beta_mes[mes,:] ~ Normal(beta_mes_jerárquico[mes], sigma_mes)
+//
 // beta_año[año,:] ~ Normal(beta_año_jerárquico[año], sigma_año)
+//
 //y_clima los jerárquicos de meses/años tienen una estructura dinámica: 
 //  beta_mes_jerárquico[mes] ~ Normal(beta_mes_jerárquico[mes - 1], sigma_jerárquico_mes)
 //  beta_año_jerárquico[año] ~ Normal(beta_año_jerárquico[año - 1], sigma_jerárquico_año)
+//
 //con beta_mes_jerárquico[1] ~ Normal(0.0, sigma_jerárquico_mes) y_clima
-//beta_año_jerárquico[1] ~ Normal(0.0, sigma_jerárquico_año).
+//
+//    beta_año_jerárquico[1] ~ Normal(0.0, sigma_jerárquico_año).
+//
 //El código tiene algunas transformaciones para mejorar la velocidad de convergencia
 //en particular transformaciones de la normal de la forma:
+//
 //   beta = alpha + sigma*Z con Z ~ Normal(0.0, 1.0)
+//
 //para simular beta ~ Normal(alpha, sigma)
+//
 //-----------------------------------------------------------------------------
 //
 data {

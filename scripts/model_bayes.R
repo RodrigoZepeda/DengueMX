@@ -22,7 +22,8 @@ clima_data  <- read_rds("datos-clima/processed/Clima_info.rds") %>%
   arrange(ANIO, MES_NUM) %>%
   filter(!is.nan(Precipitacion)) %>%
   mutate(Precipitacion = sqrt(Precipitacion)) %>%
-  select(-starts_with("Temperatura"))
+  select(-starts_with("Temperatura")) %>%
+  write_excel_csv("model_inputs/clima.csv")
 
 #Colocamos en el formato para saber asignar mes/día de temp
 clima_vars <- clima_data %>%
@@ -46,12 +47,24 @@ max_autocorrelation_order <- 6
 
 #Create year, month and week variable
 dengue_data <- dengue_data %>%
-  mutate(year    = year(fecha)) %>%
+  mutate(year    = epiyear(fecha)) %>%
   mutate(epiweek = epiweek(fecha)) %>%
   filter(year > 2015) %>%
   mutate(month   = month(fecha)) %>%
   mutate(normalized_year = year - min(year) + 1) %>%
   filter(fecha < max(fecha)) %>% #Drop last observation is always lower
+  write_excel_csv("model_inputs/dengue.csv") %>%
+  identity()
+
+#For new julia model
+dengue_data_state  <- read_csv("datos-limpios/dengue_2016_2022_mx.csv")  %>%
+  mutate(year    = epiyear(fecha)) %>%
+  mutate(epiweek = epiweek(fecha)) %>%
+  filter(year > 2015) %>%
+  mutate(month   = month(fecha)) %>%
+  mutate(normalized_year = year - min(year) + 1) %>%
+  filter(fecha < max(fecha)) %>% #Drop last observation is always lower
+  write_excel_csv("model_inputs/dengue_state.csv") %>%
   identity()
 
 anio_mes_semana_dengue <- dengue_data %>%
