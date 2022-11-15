@@ -10,7 +10,7 @@ cmdstan/*
 scripts/predice_clima
 scripts/model_bayes
 julia/
-
+model_devel/
 # History files
 .Rhistory
 .Rapp.history
