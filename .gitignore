@@ -10,6 +10,7 @@ cmdstan/*
 scripts/predice_clima
 scripts/model_bayes
 julia/
+model_multivariate_v1
 
 # History files
 .Rhistory

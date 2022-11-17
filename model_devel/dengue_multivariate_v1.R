@@ -4,10 +4,11 @@
 rm(list = ls())
 pacman::p_load(clusterGeneration, cmdstanr, bayestestR, lubridate, 
                posterior, ggtext, glue, ggrepel, tidyverse, cli, clusterGeneration)
-
+set.seed(348695)
 
 #DENGUE
 #------------------------------------------------------------
+days_to_predict <- 180
 
 #Check pacf(sqrt(dengue_data$nraw)) for AR(p)
 arma_p <- 6
@@ -35,13 +36,22 @@ dengue_data <- dengue_data |>
   mutate(year = epiyear(fecha)) |>
   mutate(epiweek = epiweek(fecha)) |>
   filter(Estado %in% c("BAJA CALIFORNIA SUR","CAMPECHE", "CHIAPAS",
-                       #"COAHUILA","COLIMA","GUERRERO",
-                       #"JALISCO","MICHOACÁN","MORELOS","NAYARIT","NUEVO LEÓN","OAXACA",
-                       #"PUEBLA","QUINTANA ROO","SINALOA","TABASCO","TAMAULIPAS", "VERACRUZ",
+                       "COAHUILA","COLIMA","GUERRERO",
+                       "JALISCO","MICHOACÁN","MORELOS","NAYARIT","NUEVO LEÓN","OAXACA",
+                       "PUEBLA","QUINTANA ROO","SINALOA","TABASCO","TAMAULIPAS", "VERACRUZ",
                        "YUCATÁN")) |>
   identity()
 
 year_week_dengue_input <- dengue_data |>
+  dplyr::select(year, epiweek) |>
+  distinct() |>
+  as.matrix()
+
+year_week_dengue_predict <- tibble(
+  fecha = seq(max(dengue_data$fecha), 
+              max(dengue_data$fecha) + days(days_to_predict), by = "1 day")) |>
+  mutate(year = epiyear(fecha)) |>
+  mutate(epiweek = epiweek(fecha)) |>
   dplyr::select(year, epiweek) |>
   distinct() |>
   as.matrix()
@@ -89,8 +99,9 @@ datos  <- list(
   arma_q = arma_q,
   
   #Predicción
-  N_dengue_predict = 0,
-  year_week_dengue_predict_input = year_week_dengue_input
+  N_predict = nrow(year_week_dengue_predict),
+  year_week_dengue_predict = year_week_dengue_predict,
+  N_dengue_predict = 0
   
 ) 
 
@@ -98,8 +109,9 @@ dengue_model <- cmdstan_model("model_devel/model_multivariate_v1.stan", cpp_opti
 
 #Valores iniciales 
 initf2 <- function(chain_id = 1) {
-  list(tau                   = abs(rnorm(datos$N_states)),
-       Omega                 = rcorrmatrix(datos$N_states)
+  list(
+    tau   = abs(rnorm(datos$N_states)),
+    Omega = rcorrmatrix(datos$N_states)
   )
 }
 init_ll      <- lapply(1:chains, function(id) initf2(chain_id = id))
@@ -129,11 +141,9 @@ df <- model_sample$summary("dengue_predicted") |>
     by = "state"
   ) |>
   left_join(
-    dengue_data |> 
-      dplyr::select(fecha) |>
-      arrange(fecha)|>
-      distinct() |>
-      mutate(nval = 1:n()),
+    tibble(fecha = seq(min(dengue_data$fecha), 
+                       max(dengue_data$fecha) + days(days_to_predict), by = "7 days")) |>
+    mutate(nval = 1:n()),
     by = "nval"
   )
 
@@ -146,5 +156,3 @@ ggplot() +
   theme_classic() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma)
-
-epsilon <- model_sample$summary("epsilon")

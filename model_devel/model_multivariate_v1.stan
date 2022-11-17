@@ -116,225 +116,252 @@ data {
   //Dengue observed parametrs
   //---------------------------------------------
   int<lower=1> N_dengue;          //Number of weekly dengue observations
-  int<lower=0> N_states;         //Number of States + National
+  int<lower=0> N_states;          //Number of States + National
   int<lower=0, upper=53> N_weeks; //Total number of epiweeks in model
   int<lower=0> N_years;           //Total number of years in model
-  array[N_dengue, 2] int<lower=1> year_week_dengue_input; //Year/month/week of registry
+  array[N_dengue, 2]  int<lower=1> year_week_dengue_input; //Year/month/week of registry
   matrix[N_dengue, N_states] dengue; //Dengue cases by state including national 
+  
+  //Data transformation
+  //---------------------------------------------
   int<lower=0> transform_dengue;  //Parameter to choose transformation for dengue cases
   real<lower=-5,upper=5> lambda_boxcox; //Parameter if boxcox transform chosen
   
   //Model hyperparameters
   //---------------------------------------------
   int<lower=0> arma_p;    //Autorregresive component_p
-  int<lower=0> arma_q;    //Autorregresive component_q
   
   //Prediction parameters
   //---------------------------------------------
-  int<lower=0> N_dengue_predict; //Number of weeks to predict
-  array[N_dengue + N_dengue_predict, 2] int<lower=1> year_week_dengue_predict_input; //year/month/week of dengue for prediction model
+  int<lower=0> N_predict;
+  array[N_predict, 2] int<lower=1> year_week_dengue_predict; //Year/month/week of registry
 }
 
 transformed data {
   //Columns for year month and week in dengue
+  //---------------------------------------------
   int <lower=1> col_year_d  = 1;
   int <lower=1> col_week_d  = 2;
   
-  //Transformed time series as well as min, max, sd, mean
+  //Transformed time series 
+  //---------------------------------------------
   matrix[N_dengue, N_states] dengue_transformed;
-  vector[N_states] mean_states;
-  vector[N_states] sd_states;
-  vector[N_states] min_states;
-  vector[N_states] max_states;
   for (edo in 1:N_states){
-    mean_states[edo] = mean(dengue[:,edo]);
-    sd_states[edo]   = sd(dengue[:,edo]);
-    min_states[edo]  = min(dengue[:,edo]);
-    max_states[edo]  = max(dengue[:,edo]);
     dengue_transformed[:,edo] =  scaler(dengue[:,edo], transform_dengue, lambda_boxcox);
   }
   
   //Normalization of years to start in 1
+  //---------------------------------------------
   int<lower=0> min_year_dengue         = min(year_week_dengue_input[:, col_year_d]);
   int<lower=0> max_year_dengue         = max(year_week_dengue_input[:, col_year_d]);
-  int<lower=0> max_year_dengue_predict = max(year_week_dengue_predict_input[:, col_year_d]);
+  int<lower=0> max_year_dengue_predict = max(year_week_dengue_predict[:, col_year_d]);
   
   //Total years to predict from last observed
-  int<lower=0> Nyears_predict = max_year_dengue_predict - max_year_dengue;
-  
-  array[N_dengue, 2] int<lower=1> year_week_dengue;
-  year_week_dengue[:, col_week_d] =  year_week_dengue_input[:, col_week_d]; 
-  for (n in 1:N_dengue){
-    year_week_dengue[n, col_year_d] = year_week_dengue_input[n, col_year_d] - (min_year_dengue - 1);
+  int<lower=0> N_years_predict = max_year_dengue_predict - max_year_dengue;
+  array[N_dengue + N_predict, 2]  int<lower=1> year_week_dengue;
+  for (n in 1:(N_dengue + N_predict)){
+    if (n <= N_dengue){
+      year_week_dengue[n,:] =  year_week_dengue_input[n,:];
+    } else {
+      year_week_dengue[n,:] =  year_week_dengue_predict[n - N_dengue,:];
+    }
   }
   
-  array[N_dengue + N_dengue_predict, 2] int<lower=1> year_week_dengue_predict;
-  year_week_dengue_predict[:, col_week_d] =  year_week_dengue_predict_input[:, col_week_d];
-  for (n in 1:(N_dengue + N_dengue_predict)){
-    year_week_dengue_predict[n, col_year_d] = year_week_dengue_predict_input[n, col_year_d] - (min_year_dengue - 1);
+  //Finally, years starting in 1
+  for (n in 1:(N_dengue + N_predict)){
+    year_week_dengue[n, col_year_d] = year_week_dengue[n, col_year_d] - (min_year_dengue - 1);
+  }
+  
+  //Matrix of zeros for sampling
+  //---------------------------------------------
+  array[N_dengue] vector[N_states] Zeros;
+  for (n in 1:N_dengue){
+    Zeros[n] = rep_vector(0.0, N_states);
+  }
+  
+  //Array of lags (for each state)
+  //Creates the following matrix
+  //-------------------------
+  // 0        0     0      0    ...   0
+  //y[1]      0     0      0    ...   0
+  //y[2]    y[1]    0      0    ...   0
+  //y[3]    y[2]   y[1]    0    ...   0
+  // ...
+  //y[n-1] y[n-2] y[n-3] y[n-4] ... y[n-p]
+  //-------------------------
+  array[N_states] matrix[N_dengue, arma_p] previous_dengue;
+  for (edo in 1:N_states){
+    for (n in 1:N_dengue){
+      for (p in 1:arma_p){
+        if (n - p <= 0){
+          previous_dengue[edo, n, p] = 0.0;
+        } else {
+          previous_dengue[edo, n, p] = dengue_transformed[n - p, edo];
+        }
+      }
+    }
   }
 }
 
 parameters {
   
+  //Variances
+  real<lower=0,upper=pi()/2> sigma_year_unif;
+  real<lower=0,upper=pi()/2> sigma_week_unif;
+  real<lower=0,upper=pi()/2> sigma_year_state_unif;
+  real<lower=0,upper=pi()/2> sigma_week_state_unif;
+  real<lower=0,upper=pi()/2> sigma_alpha_unif;
+  real<lower=0,upper=pi()/2> sigma_AR_unif;
+  real<lower=0,upper=pi()/2> sigma_AR_state_unif;
+  real<lower=0,upper=pi()/2> sigma_alpha_state_unif;
+  vector<lower=0,upper=pi()/2>[N_states] tau_unif; // prior scale
+  
+  //See
+  //https://mc-stan.org/docs/stan-users-guide/multivariate-hierarchical-priors.html
+  cholesky_factor_corr[N_states] L_Omega;
+  
   //Standarized version for faster inference
   real alpha_std;
-  vector[N_states] alpha_state_std;
+  row_vector[N_states] alpha_state_std;
   vector[N_years] beta_year_std;
   vector[N_weeks] beta_week_std;
   vector[arma_p] beta_AR_std;
-  vector[arma_q] beta_MA_std;
-  real beta_year_state_std[N_years, N_states];
-  real beta_week_state_std[N_weeks, N_states];
-  real beta_AR_state_std[arma_p, N_states];
-  real<lower=-1,upper=1> beta_MA_state[arma_q, N_states];
-  //real beta_MA_state_std[arma_q, N_states];
-  
-  real<lower=0> sigma_year;
-  real<lower=0> sigma_week;
-  real<lower=0> sigma_year_state;
-  real<lower=0> sigma_week_state;
-  real<lower=0> sigma_alpha;
-  real<lower=0> sigma_AR;
-  real<lower=0> sigma_AR_state;
-  real<lower=0> sigma_MA;
-  real<lower=0> sigma_MA_state;
-  real<lower=0> sigma_alpha_state;
-  
-  corr_matrix[N_states] Omega;   // prior correlation
-  vector<lower=0>[N_states] tau; // prior scale
-
+  matrix[N_years, N_states] beta_year_state_std;
+  matrix[N_weeks, N_states] beta_week_state_std;
+  matrix[arma_p, N_states]  beta_AR_state_std;
 }
 
 transformed parameters {
   matrix[N_dengue, N_states]  mu_dengue;
   
+  //Cauchys simulated as uniform and then transformed
+  real sigma_year        = 2.5*tan(sigma_year_unif);
+  real sigma_week        = 2.5*tan(sigma_week_unif);
+  real sigma_year_state  = 2.5*tan(sigma_year_state_unif);
+  real sigma_week_state  = 2.5*tan(sigma_week_state_unif);
+  real sigma_alpha       = 2.5*tan(sigma_alpha_unif);
+  real sigma_AR          = 2.5*tan(sigma_AR_unif);
+  real sigma_AR_state    = 2.5*tan(sigma_AR_state_unif);
+  real sigma_alpha_state = 2.5*tan(sigma_alpha_state_unif);
+  vector[N_states] tau   = 2.5*tan(tau_unif);
+  
   //Un-standarized coefficients
-  real alpha;
-  vector[N_states] alpha_state;
-  vector[N_years] beta_year;
-  vector[N_weeks] beta_week;
-  vector[arma_p] beta_AR;
-  vector[arma_q] beta_MA;
-  real beta_year_state[N_years, N_states];
-  real beta_week_state[N_weeks, N_states];
-  real beta_AR_state[arma_p, N_states];
-  //real<lower=-1,upper=1> beta_MA_state[arma_q, N_states];
-  matrix[N_dengue, N_states] epsilon;
+  row_vector[N_states] alpha_state;
+  vector[N_years]  beta_year;
+  vector[N_weeks]  beta_week;
+  vector[arma_p]   beta_AR;
+  matrix[N_years, N_states] beta_year_state;
+  matrix[N_weeks, N_states] beta_week_state;
+  matrix[arma_p, N_states]  beta_AR_state;
+  array[N_dengue] row_vector [N_states] epsilon;
+  matrix[N_states, N_states] chol_Sigma = diag_pre_multiply(tau, L_Omega);
   
   //Beta year and beta week from standarized
-  beta_year = sigma_year*beta_year_std;
-  beta_week = sigma_week*beta_week_std;
+  real alpha     = sigma_alpha*alpha_std;
+  
+  //Unstandarize variables    
+  alpha_state = rep_row_vector(alpha, N_states) + sigma_alpha_state*alpha_state_std;
+  
   beta_AR   = sigma_AR*beta_AR_std;
-  beta_MA   = sigma_MA*beta_MA_std;
-  alpha     = sigma_alpha*alpha_std;
+  
+  //Dynamic priors on weeks and years
+  beta_year[1] = sigma_year*beta_year_std[1];
+  for (yr in 2:N_years)
+    beta_year[yr] = beta_year[yr - 1] + sigma_year*beta_year_std[yr];
+  
+  //Dynamic priors on weeks and years  
+  beta_week[1] = sigma_week*beta_week_std[1];
+  for (wk in 2:N_weeks)
+    beta_week[wk] = beta_week[wk - 1] + sigma_week*beta_week_std[wk];
+  
+  beta_AR_state   = rep_matrix(beta_AR, N_states)   + sigma_AR_state*beta_AR_state_std;
+  beta_year_state = rep_matrix(beta_year, N_states) + sigma_year_state*beta_year_state_std; 
+  beta_week_state = rep_matrix(beta_week, N_states) + sigma_week_state*beta_week_state_std;
   
   for (edo in 1:N_states){
-    
-    //Unstandarize variables
-    alpha_state[edo] = alpha + sigma_alpha_state*alpha_state_std[edo];
-    
-    for (p in 1:arma_p)
-      beta_AR_state[p, edo]   = beta_AR[p]   + sigma_AR_state*beta_AR_state_std[p, edo];
-      
-    /*
-    for (q in 1:arma_q)
-      beta_MA_state[q, edo]   = beta_MA[q]   + sigma_MA_state*beta_MA_state_std[q, edo];
-    */
-    
-    for (yr in 1:N_years)  
-      beta_year_state[yr, edo] = beta_year[yr] + sigma_year_state*beta_year_state_std[yr, edo]; 
-      
-    for (wk in 1:N_weeks)
-      beta_week_state[wk, edo] = beta_week[wk] + sigma_week_state*beta_week_state_std[wk, edo];
-    
-    for (n in 1:N_dengue){
-      
-      //Add time covariates
-      mu_dengue[n,edo] = alpha_state[edo] + 
-        beta_year_state[year_week_dengue[n, col_year_d], edo] + 
-        beta_week_state[year_week_dengue[n, col_week_d], edo];
-      
-      //Add autorregresive terms
-      for (r in 1:arma_p){
-        if (n - r > 0){
-          mu_dengue[n,edo] += beta_AR_state[r,edo]*dengue_transformed[n - r, edo];
-        } 
-      }
-  
-      
-      //Add moving average
-      for (r in 1:arma_q){
-        if (n - r > 0){
-          mu_dengue[n,edo] += beta_MA_state[r,edo]*epsilon[n - r,edo];
-        }
-      }
-      
-      //Calculate the errors
-      epsilon[n,edo] = dengue_transformed[n,edo] - mu_dengue[n,edo];
-      
-    }
+    mu_dengue[:, edo] = rep_vector(alpha_state[edo], N_dengue) + 
+      beta_year_state[year_week_dengue[1:N_dengue, col_year_d], edo] +
+      beta_week_state[year_week_dengue[1:N_dengue, col_week_d], edo] +
+      previous_dengue[edo]*beta_AR_state[:, edo];
   }
   
-  //Prior covariance
-  matrix[N_states, N_states] Sigma = quad_form_diag(Omega, tau);
-
+  //Error term
+  for (n in 1:N_dengue)
+    epsilon[n] = dengue_transformed[n,:] - mu_dengue[n,:];
 }
 
 model {
   
-  sigma_year  ~ cauchy(0.0, 2.5);
-  sigma_week  ~ cauchy(0.0, 2.5);
-  sigma_alpha ~ cauchy(0.0, 2.5);
-  sigma_AR    ~ cauchy(0.0, 2.5);
-  sigma_MA    ~ cauchy(0.0, 2.5);
-  
-  sigma_year_state  ~ cauchy(0.0, 2.5);
-  sigma_week_state  ~ cauchy(0.0, 2.5);
-  sigma_alpha_state ~ cauchy(0.0, 2.5);
-  sigma_AR_state    ~ cauchy(0.0, 2.5);
-  sigma_MA_state    ~ cauchy(0.0, 2.5);
-  
-  
+  //Standarized parameters
   {
     beta_year_std   ~ std_normal();
     beta_week_std   ~ std_normal();
     beta_AR_std     ~ std_normal();
-    beta_MA_std     ~ std_normal();
     alpha_std       ~ std_normal();
     alpha_state_std ~ std_normal();
     
-    for (edo in 1:N_states){
-      beta_AR_state_std[:, edo]   ~ std_normal();
-      //beta_MA_state_std[:, edo]   ~ std_normal();
-      beta_year_state_std[:, edo] ~ std_normal();
-      beta_week_state_std[:, edo] ~ std_normal();
-      beta_MA_state[:, edo] ~ normal(beta_MA, sigma_MA_state);
-    }
+    to_vector(beta_AR_state_std)   ~ std_normal();
+    to_vector(beta_year_state_std) ~ std_normal();
+    to_vector(beta_week_state_std) ~ std_normal();
+    
+    L_Omega ~ lkj_corr_cholesky(2);
   }
-  
-  
   
   //Prior variance for SUG
-  tau   ~ cauchy(0.0, 2.5);
-  Omega ~ lkj_corr(2);
+  epsilon ~ multi_normal_cholesky(Zeros, chol_Sigma);
 
-  //Model for dengue
-  for (n in 1:N_dengue){
-    epsilon[n,:] ~ multi_normal(rep_vector(0.0, N_states), Sigma);
-  }
 }
 
 generated quantities {
-  matrix[N_dengue, N_states]  dengue_predicted;
-  matrix[N_dengue, N_states]  dengue_predicted_transformed;
+  
+  matrix[N_states,N_states] Omega = multiply_lower_tri_self_transpose(L_Omega);
+  matrix[N_states,N_states] Sigma = quad_form_diag(Omega, tau);
+  
+  matrix[N_dengue + N_predict, N_states]  mu_dengue_predicted;
+  matrix[N_dengue + N_predict, N_states]  dengue_predicted;
+  vector[N_dengue + N_predict]  dengue_predicted_sum;
+  matrix[N_dengue + N_predict, N_states]  dengue_predicted_transformed;
+  matrix[N_years + N_years_predict, N_states] beta_year_state_predict;
+  
+  //Fill previous beta
+  for (yr in 1:(N_years + N_years_predict)){
+    if (yr <= N_years){
+      beta_year_state_predict[yr,:] = beta_year_state[yr,:];
+    } else {
+      beta_year_state_predict[yr,:] = to_row_vector(normal_rng(beta_year_state_predict[yr - 1,:], sigma_year));
+      beta_year_state_predict[yr,:] = to_row_vector(normal_rng(beta_year_state_predict[yr - 1,:], sigma_year_state));
+    }
+  }
+  
+  for (edo in 1:N_states){
+    for (n in 1:(N_dengue + N_predict)){
+      
+      //Prediction
+      mu_dengue_predicted[n,edo] = alpha_state[edo] + 
+        beta_year_state_predict[year_week_dengue[n, col_year_d], edo] +
+        beta_week_state[year_week_dengue[n, col_week_d], edo];
+        
+      //Add autorregresive terms
+      for (r in 1:arma_p){
+        if (n - r > 0 && n - r <= N_dengue){
+          mu_dengue_predicted[n,edo] += beta_AR_state[r,edo]*dengue_transformed[n - r, edo];
+        } else if (n - r > 0 && n - r > N_dengue){
+          mu_dengue_predicted[n,edo] += beta_AR_state[r,edo]*mu_dengue_predicted[n - r, edo];
+        }
+      }
+    }
+  }
   
   //FIXME: There should be a way not to need this
-  for (n in 1:N_dengue){
-    dengue_predicted_transformed[n,:] = to_row_vector(multi_normal_rng(to_vector(mu_dengue[n,:]), Sigma));
+  for (n in 1:(N_dengue + N_predict)){
+    dengue_predicted_transformed[n,:] = to_row_vector(multi_normal_cholesky_rng(to_vector(mu_dengue_predicted[n,:]), chol_Sigma));
   }
   
   for (edo in 1:N_states){
     dengue_predicted[:,edo] = inv_scaler(dengue_predicted_transformed[:,edo], transform_dengue, lambda_boxcox, dengue[:,edo]);
+  }
+  
+  for (n in 1:(N_dengue + N_predict)){
+    dengue_predicted_sum[n] = sum(dengue_predicted[n,1:(N_states - 1)]);
   }
 }
