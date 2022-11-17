@@ -65,7 +65,7 @@ dengue_cases <- dengue_data |>
 #------------------------------------------------------------
 
 options(mc.cores = max(parallel::detectCores() - 2, 1))
-chains = 2; iter_warmup = 250; nsim = 500; pchains = 2; 
+chains = 4; iter_warmup = 500; nsim = 1000; pchains = 4; 
 cpp_options  <- list(stan_threads = TRUE)
 
 #Chequeo de que haya más warmup que nsim
@@ -86,7 +86,7 @@ datos  <- list(
   
   #Hiperparámetros
   arma_p = arma_p,
-  arma_q = 1,
+  arma_q = arma_q,
   
   #Predicción
   N_dengue_predict = 0,

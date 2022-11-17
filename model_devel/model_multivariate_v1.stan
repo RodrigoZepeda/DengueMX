@@ -184,10 +184,11 @@ parameters {
   vector[N_weeks] beta_week_std;
   vector[arma_p] beta_AR_std;
   vector[arma_q] beta_MA_std;
-  matrix[N_years, N_states] beta_year_state_std;
-  matrix[N_weeks, N_states] beta_week_state_std;
-  matrix[arma_p, N_states] beta_AR_state_std;
-  matrix[arma_q, N_states] beta_MA_state_std;
+  real beta_year_state_std[N_years, N_states];
+  real beta_week_state_std[N_weeks, N_states];
+  real beta_AR_state_std[arma_p, N_states];
+  real<lower=-1,upper=1> beta_MA_state[arma_q, N_states];
+  //real beta_MA_state_std[arma_q, N_states];
   
   real<lower=0> sigma_year;
   real<lower=0> sigma_week;
@@ -215,10 +216,10 @@ transformed parameters {
   vector[N_weeks] beta_week;
   vector[arma_p] beta_AR;
   vector[arma_q] beta_MA;
-  matrix[N_years, N_states] beta_year_state;
-  matrix[N_weeks, N_states] beta_week_state;
-  matrix[arma_p, N_states] beta_AR_state;
-  matrix[arma_q, N_states] beta_MA_state;
+  real beta_year_state[N_years, N_states];
+  real beta_week_state[N_weeks, N_states];
+  real beta_AR_state[arma_p, N_states];
+  //real<lower=-1,upper=1> beta_MA_state[arma_q, N_states];
   matrix[N_dengue, N_states] epsilon;
   
   //Beta year and beta week from standarized
@@ -233,10 +234,19 @@ transformed parameters {
     //Unstandarize variables
     alpha_state[edo] = alpha + sigma_alpha_state*alpha_state_std[edo];
     
-    beta_AR_state[:, edo]   = beta_AR   + sigma_AR_state*beta_AR_state_std[:, edo];
-    beta_MA_state[:, edo]   = beta_MA   + sigma_MA_state*beta_MA_state_std[:, edo];
-    beta_year_state[:, edo] = beta_year + sigma_year_state*beta_year_state_std[:, edo]; 
-    beta_week_state[:, edo] = beta_week + sigma_week_state*beta_week_state_std[:, edo];
+    for (p in 1:arma_p)
+      beta_AR_state[p, edo]   = beta_AR[p]   + sigma_AR_state*beta_AR_state_std[p, edo];
+      
+    /*
+    for (q in 1:arma_q)
+      beta_MA_state[q, edo]   = beta_MA[q]   + sigma_MA_state*beta_MA_state_std[q, edo];
+    */
+    
+    for (yr in 1:N_years)  
+      beta_year_state[yr, edo] = beta_year[yr] + sigma_year_state*beta_year_state_std[yr, edo]; 
+      
+    for (wk in 1:N_weeks)
+      beta_week_state[wk, edo] = beta_week[wk] + sigma_week_state*beta_week_state_std[wk, edo];
     
     for (n in 1:N_dengue){
       
@@ -264,8 +274,6 @@ transformed parameters {
       epsilon[n,edo] = dengue_transformed[n,edo] - mu_dengue[n,edo];
       
     }
-    
-    
   }
   
   //Prior covariance
@@ -287,6 +295,7 @@ model {
   sigma_AR_state    ~ cauchy(0.0, 2.5);
   sigma_MA_state    ~ cauchy(0.0, 2.5);
   
+  
   {
     beta_year_std   ~ std_normal();
     beta_week_std   ~ std_normal();
@@ -297,11 +306,14 @@ model {
     
     for (edo in 1:N_states){
       beta_AR_state_std[:, edo]   ~ std_normal();
-      beta_MA_state_std[:, edo]   ~ std_normal();
+      //beta_MA_state_std[:, edo]   ~ std_normal();
       beta_year_state_std[:, edo] ~ std_normal();
       beta_week_state_std[:, edo] ~ std_normal();
+      beta_MA_state[:, edo] ~ normal(beta_MA, sigma_MA_state);
     }
   }
+  
+  
   
   //Prior variance for SUG
   tau   ~ cauchy(0.0, 2.5);
