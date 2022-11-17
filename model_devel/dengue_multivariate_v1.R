@@ -65,7 +65,7 @@ dengue_cases <- dengue_data |>
 #------------------------------------------------------------
 
 options(mc.cores = max(parallel::detectCores() - 2, 1))
-chains = 4; iter_warmup = 500; nsim = 1000; pchains = 4; 
+chains = 2; iter_warmup = 250; nsim = 500; pchains = 2; 
 cpp_options  <- list(stan_threads = TRUE)
 
 #Chequeo de que haya más warmup que nsim
@@ -86,7 +86,7 @@ datos  <- list(
   
   #Hiperparámetros
   arma_p = arma_p,
-  arma_q = arma_q,
+  arma_q = 1,
   
   #Predicción
   N_dengue_predict = 0,
@@ -119,7 +119,7 @@ print(t1)
 
 df <- model_sample$summary("dengue_predicted") |>
   mutate(state  = as.numeric(str_remove_all(variable, ".*\\[[0-9]+,|\\]"))) |>
-  mutate(nval = as.numeric(str_remove_all(variable, ".*\\[|,[0-9]+\\]"))) |>
+  mutate(nval   = as.numeric(str_remove_all(variable, ".*\\[|,[0-9]+\\]"))) |>
   left_join(
     dengue_data |> 
       dplyr::select(Estado) |>
@@ -138,7 +138,7 @@ df <- model_sample$summary("dengue_predicted") |>
   )
 
 ggplot() +
-  #geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.25, data = df) +
+  geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.25, data = df) +
   geom_line(aes(y = mean, x = fecha, color = Estado), alpha = 0.5, data = df) +
   geom_point(aes(x = fecha, y = n, color = Estado), data = dengue_data) +
   geom_point(aes(x = fecha, y = n), color = "white", size = 0.5, data = dengue_data) +
@@ -146,3 +146,5 @@ ggplot() +
   theme_classic() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma)
+
+epsilon <- model_sample$summary("epsilon")

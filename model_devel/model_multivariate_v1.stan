@@ -251,18 +251,21 @@ transformed parameters {
           mu_dengue[n,edo] += beta_AR_state[r,edo]*dengue_transformed[n - r, edo];
         } 
       }
+  
       
       //Add moving average
       for (r in 1:arma_q){
         if (n - r > 0){
-          mu_dengue[n,edo] += beta_MA_state[r,edo]*epsilon[n - r, edo];
+          mu_dengue[n,edo] += beta_MA_state[r,edo]*epsilon[n - r,edo];
         }
       }
+      
+      //Calculate the errors
+      epsilon[n,edo] = dengue_transformed[n,edo] - mu_dengue[n,edo];
+      
     }
     
-    //Calculate the errors
-    epsilon[:,edo] = dengue_transformed[:,edo] - mu_dengue[:,edo];
-      
+    
   }
   
   //Prior covariance
