@@ -130,6 +130,7 @@ data {
   //Model hyperparameters
   //---------------------------------------------
   int<lower=0> arma_p;    //Autorregresive component_p
+  real<lower=0> eta_lkj;  //Parameter for correlation  of LKJ(eta)
   
   //Prediction parameters
   //---------------------------------------------
@@ -304,7 +305,7 @@ model {
     to_vector(beta_year_state_std) ~ std_normal();
     to_vector(beta_week_state_std) ~ std_normal();
     
-    L_Omega ~ lkj_corr_cholesky(2);
+    L_Omega ~ lkj_corr_cholesky(eta_lkj);
   }
   
   //Prior variance for SUG

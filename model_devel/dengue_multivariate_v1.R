@@ -12,7 +12,6 @@ days_to_predict <- 180
 
 #Check pacf(sqrt(dengue_data$nraw)) for AR(p)
 arma_p <- 6
-arma_q <- 3
 
 #Create year, month and week variable
 dengue_data <- read_csv("datos-limpios/dengue_2016_2022_mx.csv", show_col_types = FALSE)  |>
@@ -34,7 +33,13 @@ dengue_data <- dengue_data |>
   mutate(n = if_else(is.na(n), 0, n)) |>
   arrange(fecha, Estado) |>
   mutate(year = epiyear(fecha)) |>
-  mutate(epiweek = epiweek(fecha)) |>
+  mutate(epiweek = epiweek(fecha)) 
+
+dengue_nal <- dengue_data |>
+  group_by(fecha, year, epiweek) |>
+  summarise(n = sum(n), .groups = "drop")
+
+dengue_data <- dengue_data |>
   filter(Estado %in% c("BAJA CALIFORNIA SUR","CAMPECHE", "CHIAPAS",
                        "COAHUILA","COLIMA","GUERRERO",
                        "JALISCO","MICHOACÁN","MORELOS","NAYARIT","NUEVO LEÓN","OAXACA",
@@ -58,9 +63,9 @@ year_week_dengue_predict <- tibble(
 
 dengue_data <- dengue_data |>
   bind_rows(
-    dengue_data |> group_by(fecha, epiweek, year) |>
-      summarise(n = sum(n), .groups = "drop") |>
-      mutate(Estado = "ZZZ_TOTAL")
+    dengue_nal |>
+      mutate(Estado = "NACIONAL") |>
+      arrange(fecha)
   ) 
 
 dengue_cases <- dengue_data |>
@@ -95,13 +100,12 @@ datos  <- list(
   lambda_boxcox          = 0,
   
   #Hiperparámetros
-  arma_p = arma_p,
-  arma_q = arma_q,
+  arma_p  = arma_p,
+  eta_lkj = 2.0,
   
   #Predicción
   N_predict = nrow(year_week_dengue_predict),
-  year_week_dengue_predict = year_week_dengue_predict,
-  N_dengue_predict = 0
+  year_week_dengue_predict = year_week_dengue_predict
   
 ) 
 
@@ -120,8 +124,8 @@ t0 <- Sys.time()
 model_sample <- dengue_model$sample(data = datos, chains = chains, 
                                     seed = 87934, 
                                     iter_warmup = iter_warmup,
-                                    adapt_delta = 0.95, 
-                                    init = init_ll,
+                                    adapt_delta = 0.995, 
+                                    init = 1,
                                     iter_sampling = nsim - iter_warmup,
                                     max_treedepth = 2^(10),
                                     output_dir = tempdir(),                                  
@@ -152,7 +156,11 @@ ggplot() +
   geom_line(aes(y = mean, x = fecha, color = Estado), alpha = 0.5, data = df) +
   geom_point(aes(x = fecha, y = n, color = Estado), data = dengue_data) +
   geom_point(aes(x = fecha, y = n), color = "white", size = 0.5, data = dengue_data) +
-  facet_wrap(~ Estado, scales = "free_y") +
+  facet_wrap(~ Estado, scales = "free_y", ncol = 4) +
   theme_classic() +
   theme(legend.position = "none") +
-  scale_y_continuous(labels = scales::comma)
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    y = NULL,
+    x = NULL
+  )
