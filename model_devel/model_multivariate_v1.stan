@@ -304,7 +304,7 @@ model {
     to_vector(beta_year_state_std) ~ std_normal();
     to_vector(beta_week_state_std) ~ std_normal();
     
-    L_Omega ~ lkj_corr_cholesky(2);
+    L_Omega ~ lkj_corr_cholesky(1);
   }
   
   //Prior variance for SUG
@@ -321,6 +321,7 @@ generated quantities {
   matrix[N_dengue + N_predict, N_states]  dengue_predicted;
   vector[N_dengue + N_predict]  dengue_predicted_sum;
   matrix[N_dengue + N_predict, N_states]  dengue_predicted_transformed;
+  matrix[N_dengue + N_predict, N_states]  dengue_mean_predicted;
   matrix[N_years + N_years_predict, N_states] beta_year_state_predict;
   
   //Fill previous beta
@@ -359,6 +360,7 @@ generated quantities {
   
   for (edo in 1:N_states){
     dengue_predicted[:,edo] = inv_scaler(dengue_predicted_transformed[:,edo], transform_dengue, lambda_boxcox, dengue[:,edo]);
+    dengue_mean_predicted[:, edo] = inv_scaler(mu_dengue_predicted[:,edo], transform_dengue, lambda_boxcox, dengue[:,edo]);
   }
   
   for (n in 1:(N_dengue + N_predict)){

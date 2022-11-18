@@ -75,7 +75,7 @@ dengue_cases <- dengue_data |>
 #------------------------------------------------------------
 
 options(mc.cores = max(parallel::detectCores() - 2, 1))
-chains = 4; iter_warmup = 500; nsim = 1000; pchains = 4; 
+chains = 4; iter_warmup = 250; nsim = 500; pchains = 4; adapt_delta = 0.95;
 cpp_options  <- list(stan_threads = TRUE)
 
 #Chequeo de que haya más warmup que nsim
@@ -114,24 +114,25 @@ initf2 <- function(chain_id = 1) {
     Omega = rcorrmatrix(datos$N_states)
   )
 }
-init_ll      <- lapply(1:chains, function(id) initf2(chain_id = id))
 
 t0 <- Sys.time()
 model_sample <- dengue_model$sample(data = datos, chains = chains, 
                                     seed = 87934, 
-                                    iter_warmup = iter_warmup,
-                                    adapt_delta = 0.95, 
-                                    init = init_ll,
+                                    iter_warmup   = iter_warmup,
+                                    adapt_delta   = adapt_delta, 
                                     iter_sampling = nsim - iter_warmup,
                                     max_treedepth = 2^(10),
-                                    output_dir = tempdir(),                                  
-                                    threads_per_chain = 4)
+                                    output_dir = tempdir(),
+                                    threads_per_chain = pchains)
 t1 <- Sys.time() - t0
-print(t1)
+cli::cli_alert_info("Checking the model")
+model_sample$cmdstan_diagnose()
 
-df <- model_sample$summary("dengue_predicted") |>
+
+df <- model_sample$summary(c("dengue_mean_predicted","dengue_predicted")) |>
   mutate(state  = as.numeric(str_remove_all(variable, ".*\\[[0-9]+,|\\]"))) |>
   mutate(nval   = as.numeric(str_remove_all(variable, ".*\\[|,[0-9]+\\]"))) |>
+  mutate(variable = if_else(str_detect(variable, "mean"),"Mean trend", "Overall")) |>
   left_join(
     dengue_data |> 
       dplyr::select(Estado) |>
@@ -148,11 +149,17 @@ df <- model_sample$summary("dengue_predicted") |>
   )
 
 ggplot() +
-  geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.25, data = df) +
-  geom_line(aes(y = mean, x = fecha, color = Estado), alpha = 0.5, data = df) +
+  geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.15, 
+              data = df |> filter(variable == "Overall")) +
+  geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.25, 
+              data = df |> filter(variable == "Mean trend")) +
+  geom_line(aes(y = mean, x = fecha, color = Estado), alpha = 0.5, 
+              data = df |> filter(variable == "Overall")) +
   geom_point(aes(x = fecha, y = n, color = Estado), data = dengue_data) +
   geom_point(aes(x = fecha, y = n), color = "white", size = 0.5, data = dengue_data) +
   facet_wrap(~ Estado, scales = "free_y") +
   theme_classic() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma)
+
+print(t1)
