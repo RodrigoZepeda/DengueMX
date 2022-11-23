@@ -146,6 +146,7 @@ data {
   real<lower=0> eta_lkj_dengue;   //Parameter for correlation  of LKJ(eta)
   real<lower=0> eta_lkj_weather;  //Parameter for correlation  of LKJ(eta)
   real<lower=0> sigma_dengue_alpha_hyperprior_variance;
+  real<lower=0> sigma_dengue_year_hyperprior_variance;
   real<lower=0> sigma_dengue_week_hyperprior_variance;
   
   //Prediction parameters
@@ -291,12 +292,13 @@ transformed data {
 }
 
 parameters {
-  
   //Variances
   real<lower=0,upper=pi()/2> sigma_alpha_state_hyper_unif;
   real<lower=0,upper=pi()/2> sigma_beta_weather_unif;
   real<lower=0,upper=pi()/2> sigma_beta_weather_state_unif;
+  real<lower=0,upper=pi()/2> sigma_dengue_year_unif;
   real<lower=0,upper=pi()/2> sigma_dengue_week_unif;
+  real<lower=0,upper=pi()/2> sigma_dengue_year_state_hyper_unif;
   real<lower=0,upper=pi()/2> sigma_dengue_week_state_hyper_unif;
   real<lower=0,upper=pi()/2> sigma_weather_year_unif;
   real<lower=0,upper=pi()/2> sigma_weather_month_unif;
@@ -306,11 +308,10 @@ parameters {
   real<lower=0,upper=pi()/2> sigma_weather_alpha_state_unif;
   real<lower=0,upper=pi()/2> sigma_dengue_alpha_unif;
   real<lower=0,upper=pi()/2> sigma_dengue_AR_unif;
-  real<lower=0,upper=pi()/2> sigma_dengue_AR_state_unif;
   real<lower=0,upper=pi()/2> sigma_dengue_delta_unif;
+  real<lower=0,upper=pi()/2> sigma_dengue_AR_state_unif;
   vector<lower=0,upper=pi()/2>[N_states] tau_dengue_unif;  // prior scale
   vector<lower=0,upper=pi()/2>[N_states] tau_weather_unif; // prior scale
-  row_vector<lower=0,upper=pi()/2>[N_states] sigma_gamma_state_unif;
   
   //See
   //https://mc-stan.org/docs/stan-users-guide/multivariate-hierarchical-priors.html
@@ -321,15 +322,17 @@ parameters {
   real alpha_dengue_std;
   row_vector[N_states] alpha_dengue_state_std;
   row_vector[N_states] sigma_dengue_alpha_state_std;
+  row_vector[N_states] sigma_dengue_year_state_std;
   row_vector[N_states] sigma_dengue_week_state_std;
   real alpha_weather_std;
   row_vector[N_states] alpha_weather_state_std;
   real beta_dengue_weather_std;
   row_vector[N_states] beta_dengue_weather_state_std;
+  vector[N_years_dengue] beta_dengue_year_std;
   vector[N_weeks_dengue] beta_dengue_week_std;
   matrix[N_weeks_dengue, N_states] eta_dengue_std;
+  matrix[N_years_dengue, N_states] beta_dengue_year_state_std;
   matrix[N_weeks_dengue, N_states] beta_dengue_week_state_std;
-  array[N_years_dengue] matrix[N_weeks_dengue, N_states] delta_dengue_week_state_std;
   vector[N_years_weather] beta_weather_year_std;
   vector[N_months_weather] beta_weather_month_std;
   matrix[N_years_weather, N_states] beta_weather_year_state_std;
@@ -341,10 +344,10 @@ parameters {
 transformed parameters {
   matrix[N_dengue, N_states]  mu_dengue;
   matrix[N_weather, N_states] mu_weather;
+  matrix[N_dengue, N_states]  mu_week_dengue;
   matrix[N_weeks_dengue, N_states] delta_week_state;
-  
+
   //Cauchys simulated as uniform and then transformed
-  row_vector[N_states] sigma_gamma_state   = 2.5*tan(sigma_gamma_state_unif);
   real sigma_dengue_delta              = 2.5*tan(sigma_dengue_delta_unif);
   real sigma_alpha_state_hyper         = 2.5*tan(sigma_alpha_state_hyper_unif);
   real sigma_dengue_alpha              = 2.5*tan(sigma_dengue_alpha_unif);
@@ -352,7 +355,9 @@ transformed parameters {
   real sigma_beta_weather              = 2.5*tan(sigma_beta_weather_unif);
   real sigma_weather_alpha             = 2.5*tan(sigma_weather_alpha_unif);
   real sigma_weather_alpha_state       = 2.5*tan(sigma_weather_alpha_state_unif);
+  real sigma_dengue_year               = 2.5*tan(sigma_dengue_year_unif);
   real sigma_dengue_week               = 2.5*tan(sigma_dengue_week_unif);
+  real sigma_dengue_year_state_hyper   = 2.5*tan(sigma_dengue_year_state_hyper_unif);
   real sigma_dengue_week_state_hyper   = 2.5*tan(sigma_dengue_week_state_hyper_unif);
   real sigma_weather_year              = 2.5*tan(sigma_weather_year_unif);
   real sigma_weather_month             = 2.5*tan(sigma_weather_month_unif);
@@ -368,17 +373,18 @@ transformed parameters {
   row_vector[N_states] alpha_dengue_state;
   row_vector[N_states] alpha_weather_state;
   row_vector[N_states] sigma_dengue_alpha_state;
+  vector[N_years_dengue]  beta_dengue_year;
   vector[N_weeks_dengue]  beta_dengue_week;
+  row_vector[N_states] sigma_dengue_year_state;
   row_vector[N_states] sigma_dengue_week_state;
+  matrix[N_years_dengue, N_states] beta_dengue_year_state;
   matrix[N_weeks_dengue, N_states] beta_dengue_week_state;
   vector[N_years_weather]   beta_weather_year;
   vector[N_months_weather]  beta_weather_month;
   matrix[N_years_weather, N_states] beta_weather_year_state;
   matrix[N_months_weather, N_states] beta_weather_month_state;
   vector[arma_p] beta_dengue_AR;
-  array[N_years_dengue] matrix[N_weeks_dengue, N_states] gamma_week_state; 
-  matrix[N_dengue, N_states] mu_week;
-  array[N_dengue]  row_vector [N_states] epsilon_dengue;
+  array[N_dengue] row_vector [N_states]  epsilon_dengue;
   array[N_weather] row_vector [N_states] epsilon_weather;
   matrix[N_states, N_states] chol_Sigma_dengue  = diag_pre_multiply(tau_dengue, L_Omega_dengue);
   matrix[N_states, N_states] chol_Sigma_weather = diag_pre_multiply(tau_weather, L_Omega_weather);
@@ -391,6 +397,8 @@ transformed parameters {
   //Unstandarize variables 
   sigma_dengue_alpha_state  = rep_row_vector(sigma_alpha_state_hyper, N_states) +
         sigma_dengue_alpha_hyperprior_variance*sigma_dengue_alpha_state_std;
+  sigma_dengue_year_state   = rep_row_vector(sigma_dengue_year_state_hyper, N_states) +
+        sigma_dengue_year_hyperprior_variance*sigma_dengue_year_state_std;
   sigma_dengue_week_state   = rep_row_vector(sigma_dengue_week_state_hyper, N_states) +
         sigma_dengue_week_hyperprior_variance*sigma_dengue_week_state_std;
   alpha_dengue_state        = rep_row_vector(alpha_dengue, N_states)  + 
@@ -400,56 +408,49 @@ transformed parameters {
   beta_dengue_weather_state = rep_row_vector(beta_dengue_weather, N_states) + 
         sigma_beta_weather_state*beta_dengue_weather_state_std;
   
-  //Dynamic priors on years (weather)
-  beta_weather_year[1] = sigma_weather_year*beta_weather_year_std[1];
-  for (yr in 2:N_years_weather)
-    beta_weather_year[yr] = beta_weather_year[yr - 1] + sigma_weather_year*beta_weather_year_std[yr];
+  //Dynamic priors on years (dengue)
+  beta_dengue_year[1] = sigma_dengue_year*beta_dengue_year_std[1];
+  for (yr in 2:N_years_dengue)
+    beta_dengue_year[yr] = beta_dengue_year[yr - 1] + sigma_dengue_year*beta_dengue_year_std[yr];
+  
+  //Initial random noise for weeks
+  delta_week_state[1,:] = sigma_dengue_delta*eta_dengue_std[1,:];
+  for (wk in 2:N_weeks_dengue)
+    delta_week_state[wk,:] = delta_week_state[wk - 1,:] + sigma_dengue_delta*eta_dengue_std[wk,:];
   
   //Dynamic priors on weeks (dengue)
   beta_dengue_week[1] = sigma_dengue_week*beta_dengue_week_std[1];
   for (wk in 2:N_weeks_dengue)
     beta_dengue_week[wk] = beta_dengue_week[wk - 1] + sigma_dengue_week*beta_dengue_week_std[wk];
-    
-  //Initial state noise for weeks
-  delta_week_state[1,:] = sigma_dengue_delta*eta_dengue_std[1,:];
-  for (wk in 2:N_weeks_dengue)
-    delta_week_state[wk,:] = delta_week_state[wk - 1,:] + sigma_dengue_delta*eta_dengue_std[wk,:];
+  
+  //Dynamic priors on years (weather)
+  beta_weather_year[1] = sigma_weather_year*beta_weather_year_std[1];
+  for (yr in 2:N_years_weather)
+    beta_weather_year[yr] = beta_weather_year[yr - 1] + sigma_weather_year*beta_weather_year_std[yr];
     
   //Dynamic priors on months (weather)
   beta_weather_month[1] = sigma_weather_month*beta_weather_month_std[1];
   for (mth in 2:N_months_weather)
     beta_weather_month[mth] = beta_weather_month[mth - 1] + sigma_weather_month*beta_weather_month_std[mth];
     
-  beta_dengue_AR = sigma_dengue_AR*beta_dengue_AR_std;
+  beta_dengue_AR        = sigma_dengue_AR*beta_dengue_AR_std;
   
   //Variables to state level
-  beta_dengue_week_state   = delta_week_state + rep_matrix(beta_dengue_week, N_states) + 
+  //beta_dengue_AR_state     = rep_matrix(beta_dengue_AR, N_states)     + sigma_dengue_AR_state*beta_dengue_AR_state_std;
+  beta_dengue_year_state   = rep_matrix(beta_dengue_year, N_states)   + rep_matrix(sigma_dengue_year_state, N_years_dengue).*beta_dengue_year_state_std; 
+  beta_dengue_week_state   = delta_week_state + rep_matrix(beta_dengue_week, N_states)   + 
     rep_matrix(sigma_dengue_week_state, N_weeks_dengue).*beta_dengue_week_state_std;
   beta_weather_year_state  = rep_matrix(beta_weather_year, N_states)  + sigma_weather_year_state*beta_weather_year_state_std; 
   beta_weather_month_state = rep_matrix(beta_weather_month, N_states) + sigma_weather_month_state*beta_weather_month_state_std;
   
-  //Week
-  gamma_week_state[1] = beta_dengue_week_state;
-  for (yr in 2:N_years_dengue){
-    gamma_week_state[yr] = gamma_week_state[yr - 1] + 
-      beta_dengue_week_state + 
-      rep_matrix(sigma_gamma_state, N_weeks_dengue).*delta_dengue_week_state_std[yr];
-  }
-  
-  for (n in 1:N_dengue){
-    for(edo in 1:N_states){
-      mu_week[n,edo] = gamma_week_state[year_month_week_dengue[n, col_year_d], 
-                                        year_month_week_dengue[n, col_week_d], edo];
-     }
-  }
-    
   mu_weather = rep_matrix(alpha_weather_state, N_weather) + 
       beta_weather_year_state[year_month_weather[1:N_weather, col_year_w], :] +
       beta_weather_month_state[year_month_weather[1:N_weather, col_month_w], :];
     
   for (edo in 1:N_states){
     mu_dengue[:, edo] = rep_vector(alpha_dengue_state[edo], N_dengue) + 
-      mu_week[:, edo] +
+      beta_dengue_year_state[year_month_week_dengue[1:N_dengue, col_year_d], edo] +
+      beta_dengue_week_state[year_month_week_dengue[1:N_dengue, col_week_d], edo] +
       beta_dengue_weather_state[edo]*beta_weather_month_state[month_index, edo] +
       previous_dengue[edo]*beta_dengue_AR_state[:, edo];
   }
@@ -467,29 +468,29 @@ model {
   
   //Standarized parameters
   {
-    alpha_dengue_std              ~ std_normal();
-    alpha_dengue_state_std        ~ std_normal();
-    alpha_weather_std             ~ std_normal();
-    alpha_weather_state_std       ~ std_normal();
-    beta_dengue_week_std          ~ std_normal();
-    beta_weather_year_std         ~ std_normal();
-    beta_weather_month_std        ~ std_normal();
-    beta_dengue_AR_std            ~ std_normal();
-    beta_dengue_weather_std       ~ std_normal();
+    alpha_dengue_std        ~ std_normal();
+    alpha_dengue_state_std  ~ std_normal();
+    alpha_weather_std       ~ std_normal();
+    alpha_weather_state_std ~ std_normal();
+    beta_dengue_year_std    ~ std_normal();
+    beta_dengue_week_std    ~ std_normal();
+    beta_weather_year_std   ~ std_normal();
+    beta_weather_month_std  ~ std_normal();
+    beta_dengue_AR_std      ~ std_normal();
+    beta_dengue_weather_std ~ std_normal();
     sigma_dengue_alpha_state_std  ~ std_normal();
     beta_dengue_weather_state_std ~ std_normal();
+    sigma_dengue_year_state_std   ~ std_normal();
     sigma_dengue_week_state_std   ~ std_normal();
     
     for (p in 1:arma_p)
-      beta_dengue_AR_state[p,:] ~ normal(beta_dengue_AR[p], sigma_dengue_AR_state);
-    
+      beta_dengue_AR_state[p,:]    ~ normal(beta_dengue_AR[p], sigma_dengue_AR_state);
+      
+    to_vector(beta_dengue_year_state_std)   ~ std_normal();
     to_vector(beta_dengue_week_state_std)   ~ std_normal();
     to_vector(beta_weather_year_state_std)  ~ std_normal();
     to_vector(beta_weather_month_state_std) ~ std_normal();
     to_vector(eta_dengue_std)               ~ std_normal();
-    
-    for (yr in 1:N_years_dengue)
-      to_vector(delta_dengue_week_state_std[yr])  ~ std_normal();
     
     L_Omega_dengue  ~ lkj_corr_cholesky(eta_lkj_dengue);
     L_Omega_weather ~ lkj_corr_cholesky(eta_lkj_weather);
@@ -509,7 +510,6 @@ generated quantities {
   matrix[N_states,N_states] Omega_weather = multiply_lower_tri_self_transpose(L_Omega_weather);
   matrix[N_states,N_states] Sigma_weather = quad_form_diag(Omega_weather, tau_weather);
   
-  matrix[N_years_weather + N_years_weather_predict, N_states] beta_weather_year_state_predict;
   matrix[N_weather + N_predict_weather, N_states]  mu_weather_predicted;
   matrix[N_weather + N_predict_weather, N_states]  weather_predicted;
   array[N_weather + N_predict_weather] vector [N_states] epsilon_weather_predict;
@@ -517,9 +517,18 @@ generated quantities {
   matrix[N_dengue + N_predict_dengue, N_states]  mu_dengue_predicted;
   matrix[N_dengue + N_predict_dengue, N_states]  dengue_predicted;
   array[N_dengue + N_predict_dengue]  vector [N_states]  epsilon_dengue_predict;
-  matrix[N_dengue + N_predict_dengue, N_states] mu_week_predict;
-  array[N_years_dengue + N_years_dengue_predict] matrix[N_weeks_dengue, N_states] gamma_week_state_predict; 
   
+  matrix[N_years_weather + N_years_weather_predict, N_states] beta_weather_year_state_predict;
+  matrix[N_years_dengue  + N_years_dengue_predict, N_states] beta_dengue_year_state_predict;
+  
+  //Fill previous beta (dengue)
+  for (yr in 1:(N_years_dengue + N_years_dengue_predict)){
+    if (yr <= N_years_dengue){
+      beta_dengue_year_state_predict[yr,:] = beta_dengue_year_state[yr,:];
+    } else {
+      beta_dengue_year_state_predict[yr,:] = beta_dengue_year_state_predict[yr - 1,:];
+    }
+  }
   
   //Fill previous beta (weather)
   for (yr in 1:(N_years_weather + N_years_weather_predict)){
@@ -541,24 +550,12 @@ generated quantities {
   for (n in 1:(N_weather + N_predict_weather))
     mu_weather_predicted[n,:] += to_row_vector(epsilon_weather_predict[n]);
     
-  //Gamma
-  gamma_week_state_predict[1:N_years_dengue] = gamma_week_state;
-  for (yr in (N_years_dengue + 1):(N_years_dengue + N_years_dengue_predict)){
-    gamma_week_state_predict[yr] = gamma_week_state_predict[yr - 1] + 
-      beta_dengue_week_state;
-  }
-  
-  for (n in 1:(N_dengue + N_predict_dengue)){
-    for(edo in 1:N_states){
-      mu_week_predict[n,edo] = gamma_week_state_predict[year_month_week_dengue[n, col_year_d], 
-                                                        year_month_week_dengue[n, col_week_d], edo];
-     }
-  }
-    
   for (edo in 1:N_states){
     mu_dengue_predicted[:,edo] = rep_vector(alpha_dengue_state[edo], N_dengue + N_predict_dengue) + 
-      mu_week_predict[:, edo] +
-      beta_dengue_weather_state[edo]*beta_weather_month_state[month_index_predict, edo];
+      beta_dengue_year_state_predict[year_month_week_dengue[:, col_year_d], edo] +
+      beta_dengue_week_state[year_month_week_dengue[:, col_week_d], edo] +
+      beta_dengue_weather_state[edo]*
+      beta_weather_month_state[month_index_predict, edo];
   }
   
   for (n in 1:(N_dengue + N_predict_dengue)){
