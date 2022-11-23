@@ -122,7 +122,7 @@ dengue_cases <- dengue_data_final |>
 #------------------------------------------------------------
 
 options(mc.cores = max(parallel::detectCores() - 2, 1))
-chains = 1; iter_warmup = 50; nsim = 100; pchains = 1; 
+chains = 4; iter_warmup = 1000; nsim = 2000; pchains = 4; 
 cpp_options  <- list(stan_threads = TRUE)
 
 #Chequeo de que haya más warmup que nsim
@@ -204,11 +204,11 @@ df <- model_sample$summary("dengue_predicted") |>
   )
 
 ggplot() +
-  geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.25, data = df) +
-  geom_line(aes(y = mean, x = fecha, color = Estado), alpha = 0.5, data = df) +
-  geom_point(aes(x = fecha, y = n, color = Estado), size = 0.25, data = dengue_data_final, alpha = 0.5) +
+  geom_ribbon(aes(x = fecha, ymin = q5, ymax = q95, fill = Estado), alpha = 0.25, data = df |> filter(fecha >= ymd("2022/01/01"))) +
+  geom_line(aes(y = mean, x = fecha, color = Estado), alpha = 0.5, data = df |> filter(fecha >= ymd("2022/01/01"))) +
+  geom_point(aes(x = fecha, y = n, color = Estado), size = 0.25, data = dengue_data_final |> filter(fecha >= ymd("2022/01/01")), alpha = 0.5) +
   geom_point(aes(x = fecha, y = n,), color = "black", size = 0.25,
-             data = dengue_data |> filter(fecha > max(dengue_data_final$fecha))) +
+             data = dengue_data |> filter(fecha > max(dengue_data_final$fecha)) |> filter(fecha >= ymd("2022/01/01"))) +
   facet_wrap(~ Estado, scales = "free_y", ncol = 4) +
   theme_classic() +
   theme(legend.position = "none") +
