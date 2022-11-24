@@ -6,11 +6,7 @@ pacman::p_load(clusterGeneration, cmdstanr, bayestestR, lubridate,
                posterior, ggtext, glue, ggrepel, tidyverse, cli, clusterGeneration)
 set.seed(348695)
 days_to_predict <- 365
-entidades <- c("BAJA CALIFORNIA SUR","CAMPECHE", "CHIAPAS", "NACIONAL",
-               "COAHUILA","COLIMA","GUERRERO",
-               "JALISCO","MICHOACÁN","MORELOS","NAYARIT","NUEVO LEÓN","OAXACA",
-               "PUEBLA","QUINTANA ROO","SINALOA","TABASCO","TAMAULIPAS", "VERACRUZ",
-               "YUCATÁN")
+
 #CLIMA
 #------------------------------------------------------------
 #Archivos con la info de precipitación y temperatura
@@ -18,7 +14,7 @@ clima_data  <- read_rds("datos-clima/processed/Clima_info.rds") %>%
   mutate(MES_NUM = as.numeric(MES_NUM)) %>%
   filter(ANIO >= 2010) %>%
   filter(FECHA_PROXY <= ymd("2022/06/01")) |>
-  filter(ENTIDAD %in% entidades) |>
+  #filter(ENTIDAD %in% entidades) |>
   select(-ANUAL, -MES) %>%
   pivot_wider(id_cols = c(ENTIDAD, FECHA_PROXY, ANIO, MES_NUM), names_from = VARIABLE, values_from = VALOR) %>%
   arrange(FECHA_PROXY, ENTIDAD) %>%
@@ -88,7 +84,7 @@ dengue_data <- dengue_data |>
   ) 
 
 dengue_data <- dengue_data |>
-  filter(Estado %in% entidades) |>
+  #filter(Estado %in% entidades) |>
   identity() 
 
 dengue_data_final <- dengue_data |>
@@ -176,10 +172,10 @@ t0 <- Sys.time()
 model_sample <- dengue_model$sample(data = datos, chains = chains, 
                                     seed = 87934, 
                                     iter_warmup = iter_warmup,
-                                    adapt_delta = 0.95, 
+                                    adapt_delta = 0.995, 
                                     init = 1,
                                     iter_sampling = nsim - iter_warmup,
-                                    max_treedepth = 2^(10),
+                                    max_treedepth = 2^(11),
                                     output_dir = tempdir(),                                  
                                     threads_per_chain = 4)
 t1 <- Sys.time() - t0

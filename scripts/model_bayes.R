@@ -163,7 +163,7 @@ model_sample <- dengue_model$sample(data = datos, chains = chains,
                                   max_treedepth = 2^(10),
                                   output_dir = tempdir(),                                  
                                   threads_per_chain = 4)
-
+#TODO Start here for new model
 #------------------------------------------------------------
 #GRÁFICO
 #------------------------------------------------------------

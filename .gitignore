@@ -12,6 +12,7 @@ scripts/model_bayes
 julia/
 model_multivariate_v1
 d.*.pdf
+model_devel/model_multivariate_v1
 
 # History files
 .Rhistory
