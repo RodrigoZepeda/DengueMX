@@ -118,7 +118,7 @@ dengue_cases <- dengue_data_final |>
 #------------------------------------------------------------
 
 options(mc.cores = max(parallel::detectCores() - 2, 1))
-chains = 4; iter_warmup = 1000; nsim = 2000; pchains = 4; 
+chains = 4; iter_warmup = 500; nsim = 1000; pchains = 4; 
 cpp_options  <- list(stan_threads = TRUE)
 
 #Chequeo de que haya más warmup que nsim
@@ -172,10 +172,10 @@ t0 <- Sys.time()
 model_sample <- dengue_model$sample(data = datos, chains = chains, 
                                     seed = 87934, 
                                     iter_warmup = iter_warmup,
-                                    adapt_delta = 0.995, 
+                                    adapt_delta = 0.99, 
                                     init = 1,
                                     iter_sampling = nsim - iter_warmup,
-                                    max_treedepth = 2^(11),
+                                    max_treedepth = 2^(10),
                                     output_dir = tempdir(),                                  
                                     threads_per_chain = 4)
 t1 <- Sys.time() - t0
