@@ -17,7 +17,7 @@ date=$(date '+%Y-%m-%d')
 for fname in $(ls /home/rod/DengueMX/panoramas_epidemiologicos_previos/import)
 do
     echo $fname
-    /home/rod/miniconda3/envs/Dengue/bin/python3 panoramas_epidemiologicos_previos/import/$fname
+    /home/rod/miniconda3/envs/DengueMX/bin/python3 panoramas_epidemiologicos_previos/import/$fname
 done
 
 #Formateo de la base de dengue
