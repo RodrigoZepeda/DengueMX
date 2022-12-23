@@ -1,7 +1,7 @@
 rm(list = ls())
 
 #Python to tabulapy read the pdf's
-reticulate::use_condaenv("Dengue")
+reticulate::use_condaenv("DengueMX")
 pacman::p_load(tidyverse, RCurl, glue, lubridate, foreach, readxl, ggtext, reticulate, MetBrewer)
 
 paleta_color <- met.brewer("Renoir", n = 32, type = "continuous")
