@@ -98,7 +98,7 @@ anio_mes_semana_dengue_predict_stan <- anio_mes_semana_dengue_predict %>%
 #------------------------------------------------------------
 
 options(mc.cores = parallel::detectCores())
-chains = 1; iter_warmup = 50; nsim = 100; pchains =1; 
+chains = 4; iter_warmup = 1000; nsim = 2000; pchains = 4; 
 cpp_options  <- list(stan_threads = TRUE)
 
 #Chequeo de que haya más warmup que nsim

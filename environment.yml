@@ -1,0 +1,12 @@
+name: DengueMX
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - tabula-py
+  - urllib3
+  - requests
+  - ca-certificates
+  - openssl
+prefix: /usr/local/Caskroom/miniconda/base/envs/DengueMX
