@@ -243,3 +243,12 @@ predplot <- ggplot(prediction) +
              data = max_chain, size = 2)
 ggsave("images/Dengue_predict.pdf", predplot, width = 8, height = 5)
 ggsave("images/Dengue_predict.png", predplot, width = 8, height = 5, dpi = 750, bg = "white")
+
+prediction_2 <- prediction |> 
+  dplyr::select(epiweek, year, nraw, `50%`,`2.5%`,`10%`,`90%`,`97.5%`) 
+colnames(prediction_2) <- c("semana_epi","anio","observados",
+                            "predichos","intervalo_bajo_95",
+                            "intervalo_bajo_80",
+                            "intervalo_alto_80","intervalo_alto_95")
+prediction_2 |>
+  write_excel_csv(glue::glue("predictions/pred_{lubridate::today()}.csv"))
