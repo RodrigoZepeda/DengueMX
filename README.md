@@ -60,4 +60,3 @@ una explicación más técnica del modelo la puedes encontrar en [`MODELO.md`](M
 La meta es tener un (mejor) modelo de dengue aunque sea a nivel nacional. Éste es sólo una prueba de concepto. Si te interesa escríbeme o manda un pull request. Algunas cosas en las que podrías colaborar:
 
 + Descargar datos de años previos. 
-+ Mejorar el modelo (por ahora es sólo uno de juguete por falta de tiempo). 
