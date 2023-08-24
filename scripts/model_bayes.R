@@ -250,5 +250,7 @@ colnames(prediction_2) <- c("semana_epi","anio","observados",
                             "predichos","intervalo_bajo_95",
                             "intervalo_bajo_80",
                             "intervalo_alto_80","intervalo_alto_95")
+unlink("predictions", recursive = T)
+dir.create("predictions")
 prediction_2 |>
   write_excel_csv(glue::glue("predictions/pred_{lubridate::today()}.csv"))
