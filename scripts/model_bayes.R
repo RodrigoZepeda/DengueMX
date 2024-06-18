@@ -2,8 +2,14 @@
 
 #Bayesian model
 rm(list = ls())
-pacman::p_load(clusterGeneration, cmdstanr, bayestestR, lubridate, 
-               posterior, ggtext, glue, ggrepel, tidyverse)
+library(clusterGeneration)
+library(cmdstanr)
+library(bayestestR)
+library(glue)
+library(posterior)
+library(ggtext)
+library(ggrepel)
+library(tidyverse)
 
 N_dengue_predict <- 52*2 #Weeks to predict from now
 
@@ -12,17 +18,18 @@ N_dengue_predict <- 52*2 #Weeks to predict from now
 #------------------------------------------------------------
 
 #Archivos con la info de precipitación y temperatura
-clima_data  <- read_rds("datos-clima/processed/Clima_info.rds") %>%
+clima_data  <- read_csv("datos-clima/processed/Clima_info.csv") %>%
   mutate(MES_NUM = as.numeric(MES_NUM)) %>%
   filter(ANIO >= 2010) %>%
-  select(-ANUAL, -FECHA_PROXY, -MES) %>%
-  filter(ENTIDAD == "NACIONAL") %>%
+  dplyr::select(-FECHA_PROXY, -MES) %>%
+  filter(ENTIDAD == "SAN LUIS POTOSÍ") %>%
   select(-ENTIDAD) %>%
   pivot_wider(id_cols = c(ANIO, MES_NUM), names_from = VARIABLE, values_from = VALOR) %>%
   arrange(ANIO, MES_NUM) %>%
   filter(!is.nan(Precipitacion)) %>%
   mutate(Precipitacion = sqrt(Precipitacion)) %>%
   select(-starts_with("Temperatura")) %>%
+  filter(!is.na(Precipitacion)) |> 
   write_excel_csv("model_inputs/clima.csv")
 
 #Colocamos en el formato para saber asignar mes/día de temp

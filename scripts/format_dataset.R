@@ -1,7 +1,11 @@
 #!/usr/bin/env Rscript
 
 rm(list = ls())
-pacman::p_load(tidyverse, lubridate, readxl, glue, zoo, ggtext)
+library(tidyverse)
+library(readxl)
+library(glue)
+library(zoo)
+library(ggtext)
 
 #DATA ------
 
@@ -9,7 +13,7 @@ pacman::p_load(tidyverse, lubridate, readxl, glue, zoo, ggtext)
 dengue_data <- list.files(path = "datos-abiertos/", pattern = ".*.zip", full.names = TRUE)
 
 # | > Clean duplicates----
-dengue <- read_csv(dengue_data) %>%
+dengue <- read_csv(dengue_data, show_col_types = FALSE) %>%
   mutate(Fecha_Actualizacion = case_when(
     str_detect(FECHA_ACTUALIZACION,"/") ~ as.Date(FECHA_ACTUALIZACION, "%d/%m/%Y"),
     str_detect(FECHA_ACTUALIZACION,"-") ~ as.Date(FECHA_ACTUALIZACION, "%Y-%m-%d"),
